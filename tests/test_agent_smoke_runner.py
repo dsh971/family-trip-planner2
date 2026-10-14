@@ -4,6 +4,7 @@ CLIs (no subscription spent, no network). Stdlib only.
 Run from the repo root:
     python3 -m unittest discover -s tests -v
 """
+import json
 import os
 import shutil
 import subprocess
@@ -52,12 +53,34 @@ cities:
 """
 
 
+def transcript(*events: dict) -> str:
+    return "".join(json.dumps(e) + "\n" for e in events)
+
+
+def tool_use(tool_id: str, name: str, **tool_input) -> dict:
+    return {"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "id": tool_id, "name": name, "input": tool_input}]}}
+
+
+def tool_result(tool_id: str, is_error: bool = False) -> dict:
+    return {"type": "user", "message": {"content": [
+        {"type": "tool_result", "tool_use_id": tool_id, "is_error": is_error, "content": "ok"}]}}
+
+
+GOOD_TRANSCRIPT = transcript(
+    {"type": "system", "subtype": "init"},
+    tool_use("t1", "Skill", skill="travel-planner"), tool_result("t1"),
+    tool_use("t2", "Bash", command="python3 .claude/skills/travel-planner/scripts/check_plan.py trip-plan.md"),
+    tool_result("t2"),
+)
+
+
 class FakeRunner:
     """Stands in for subprocess.run: writes `plan_text` (if any) into the
-    workspace, then returns `returncode`, or raises a timeout."""
+    workspace, then returns `returncode` with `stdout`, or raises a timeout."""
 
-    def __init__(self, plan_text=None, returncode=0, timeout=False):
-        self.plan_text, self.returncode, self.timeout = plan_text, returncode, timeout
+    def __init__(self, plan_text=None, returncode=0, timeout=False, stdout=GOOD_TRANSCRIPT):
+        self.plan_text, self.returncode, self.timeout, self.stdout = plan_text, returncode, timeout, stdout
         self.commands = []
 
     def __call__(self, command, cwd, capture_output, text, timeout):
@@ -67,7 +90,7 @@ class FakeRunner:
         if self.plan_text is not None:
             with open(os.path.join(cwd, run_agent_smoke.PLAN_NAME), "w", encoding="utf-8") as f:
                 f.write(self.plan_text)
-        return subprocess.CompletedProcess(command, self.returncode, "out", "")
+        return subprocess.CompletedProcess(command, self.returncode, self.stdout, "")
 
 
 class RunAgentTest(unittest.TestCase):
@@ -131,6 +154,25 @@ class RunAgentTest(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("exited 2", result.detail)
 
+    def test_claude_run_that_never_loads_the_skill_fails(self):
+        stdout = transcript(tool_use("t2", "Bash", command="python3 x/scripts/check_plan.py trip-plan.md"),
+                            tool_result("t2"))
+        result = self.run_one("claude-code", FakeRunner(GOOD_PLAN, stdout=stdout))
+        self.assertEqual(result.status, "fail")
+        self.assertIn("never loaded the travel-planner skill", result.detail)
+
+    def test_claude_run_whose_checker_call_was_denied_fails(self):
+        stdout = transcript(tool_use("t1", "Skill", skill="travel-planner"), tool_result("t1"),
+                            tool_use("t2", "Bash", command="python3 x/scripts/check_plan.py ./trip-plan.md"),
+                            tool_result("t2", is_error=True))
+        result = self.run_one("claude-code", FakeRunner(GOOD_PLAN, stdout=stdout))
+        self.assertEqual(result.status, "fail")
+        self.assertIn("check_plan.py", result.detail)
+
+    def test_cursor_run_is_judged_on_the_plan_alone(self):
+        result = self.run_one("cursor", FakeRunner(GOOD_PLAN, stdout="plain text"))
+        self.assertEqual(result.status, "pass", result.detail)
+
     def test_skill_is_copied_into_both_agent_folders(self):
         runner = FakeRunner(plan_text=None)
         result = self.run_one("cursor", runner)
@@ -146,9 +188,35 @@ class CommandTest(unittest.TestCase):
         shell_rules = [c for c in command if c.startswith("Bash(")]
         self.assertTrue(shell_rules)
         for rule in shell_rules:
-            self.assertRegex(rule, r"^Bash\(python3 \S+/scripts/(check_plan|md_to_ics)\.py:\*\)$")
-        self.assertNotIn("Bash", command)
-        self.assertNotIn("Bash(*)", command)
+            self.assertRegex(rule, r"^Bash\(python3 \S+/scripts/(check_plan\.py \S*trip-plan\.md"
+                                   r"|md_to_ics\.py \S*trip-plan\.md \S*trip-plan\.ics)\)$")
+        allowed = command[command.index("--allowedTools") + 1:command.index("--disallowedTools")]
+        self.assertNotIn("Bash", allowed)
+        self.assertNotIn("Bash(*)", allowed)
+
+    def test_claude_command_runs_restricted_without_the_owners_settings(self):
+        command = run_agent_smoke.build_claude_command("claude", "/tmp/ws", "prompt")
+        for flag in ("--restricted", "--strict-mcp-config"):
+            self.assertIn(flag, command)
+        self.assertEqual(command[command.index("--permission-mode") + 1], "dontAsk")
+        tools = command[command.index("--tools") + 1].split(",")
+        for tool in ("Skill", "Bash", "WebFetch"):
+            self.assertIn(tool, tools)
+        self.assertEqual(command[command.index("--output-format") + 1], "stream-json")
+        self.assertIn("--verbose", command)
+        self.assertNotIn("--setting-sources", command)
+
+    def test_claude_checker_rule_accepts_a_dot_slash_plan_path(self):
+        command = run_agent_smoke.build_claude_command("claude", "/tmp/ws", "prompt")
+        self.assertIn("Bash(python3 .claude/skills/travel-planner/scripts/check_plan.py ./trip-plan.md)", command)
+
+    def test_claude_prompt_comes_before_the_list_flags(self):
+        command = run_agent_smoke.build_claude_command("claude", "/tmp/ws", "the prompt")
+        self.assertEqual(command[1:3], ["-p", "the prompt"])
+
+    def test_cursor_runs_in_its_sandbox(self):
+        command = run_agent_smoke.build_cursor_command("cursor-agent", "/tmp/ws", "p")
+        self.assertEqual(command[command.index("--sandbox") + 1], "enabled")
 
     def test_claude_command_blocks_writes_to_the_copied_skill(self):
         command = run_agent_smoke.build_claude_command("claude", "/tmp/ws", "prompt")

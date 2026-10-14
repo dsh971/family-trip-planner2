@@ -7,16 +7,20 @@ Run from the repo root, by hand:
 
 This spends the owner's Claude and Cursor subscriptions and reads live web
 pages, so it is never part of CI or unit-test discovery. Each agent runs in
-its own throwaway workspace with the skill copied in; the owner's home
-directory and logins are NOT isolated, which is why Claude Code runs with a
-narrow tool allowlist (no general shell, no reservation commands) and Cursor
-runs without its "allow all commands" flag unless --allow-cursor-force is
-given. Workspaces are deleted after a pass and kept after a failure.
+its own throwaway workspace with the skill copied in; the owner's logins
+are NOT isolated. Claude Code runs in restricted mode (file tools confined to
+the workspace, the owner's settings files and MCP servers ignored) with an
+allowlist whose only shell commands are the skill's two scripts on the plan
+file, and its run log must show it loaded the skill and ran the checker
+successfully. Cursor's shell commands run in its sandbox, without its "allow
+all commands" flag unless --allow-cursor-force is given; Cursor is judged on
+its plan alone. Workspaces are deleted after a pass and kept after a failure.
 
 Exit codes: 0 when no agent failed (skipped agents don't fail the run), 1
 otherwise.
 """
 import argparse
+import json
 import os
 import shutil
 import stat
@@ -52,17 +56,26 @@ def workspace_roots(workspace: str) -> list[str]:
     return list(dict.fromkeys([workspace, os.path.realpath(workspace)]))
 
 
+CLAUDE_TOOLS = ["Skill", "Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch", "Bash"]
+
+
 def claude_allowed_tools(workspace: str) -> list[str]:
-    """Read/write files, web search and fetch, and python3 only for the
-    skill's own scripts — never a general shell. The scripts can't be
-    rewritten first: claude_disallowed_tools blocks edits to the copied
-    skill, and prepare_workspace makes it read-only."""
-    tools = ["Skill", "Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"]
-    for script in ("check_plan.py", "md_to_ics.py"):
-        bases = [".claude/skills/travel-planner/scripts"]
-        bases += [os.path.join(root, ".claude/skills/travel-planner/scripts") for root in workspace_roots(workspace)]
-        for base in bases:
-            tools.append(f"Bash(python3 {base}/{script}:*)")
+    """Read/write files, web search and fetch, and exactly two shell commands:
+    the checker on the plan and the converter from the plan to its .ics.
+    The converter writes wherever its second argument says, so neither
+    script gets an open-ended rule. The scripts can't be rewritten first:
+    claude_disallowed_tools blocks edits to the copied skill, and
+    prepare_workspace makes it read-only."""
+    tools = [tool for tool in CLAUDE_TOOLS if tool != "Bash"]
+    roots = workspace_roots(workspace)
+    bases = [".claude/skills/travel-planner/scripts"]
+    bases += [os.path.join(root, ".claude/skills/travel-planner/scripts") for root in roots]
+    plans = [PLAN_NAME, f"./{PLAN_NAME}"] + [os.path.join(root, PLAN_NAME) for root in roots]
+    for base in bases:
+        for plan in plans:
+            calendar = os.path.splitext(plan)[0] + ".ics"
+            tools.append(f"Bash(python3 {base}/check_plan.py {plan})")
+            tools.append(f"Bash(python3 {base}/md_to_ics.py {plan} {calendar})")
     return tools
 
 
@@ -77,12 +90,14 @@ def claude_disallowed_tools(workspace: str) -> list[str]:
 
 
 def build_claude_command(binary: str, workspace: str, prompt: str) -> list[str]:
-    return [binary, "-p", prompt, "--allowedTools", *claude_allowed_tools(workspace),
+    return [binary, "-p", prompt, "--output-format", "stream-json", "--verbose",
+            "--restricted", "--strict-mcp-config", "--permission-mode", "dontAsk", "--tools", ",".join(CLAUDE_TOOLS),
+            "--allowedTools", *claude_allowed_tools(workspace),
             "--disallowedTools", *claude_disallowed_tools(workspace)]
 
 
 def build_cursor_command(binary: str, workspace: str, prompt: str, allow_force: bool = False) -> list[str]:
-    command = [binary, "-p", "--trust", "--workspace", workspace, "--output-format", "text"]
+    command = [binary, "-p", "--trust", "--sandbox", "enabled", "--workspace", workspace, "--output-format", "text"]
     if allow_force:
         command.append("--force")
     return command + [prompt]
@@ -146,6 +161,38 @@ def evaluate_plan(path: str) -> list[str]:
     return failures
 
 
+def claude_transcript_failures(stdout: str) -> list[str]:
+    """What a Claude Code stream-json run log must show: the skill loaded
+    through the Skill tool, and at least one check_plan.py call that wasn't
+    denied or failed."""
+    uses: dict[str, dict] = {}
+    errors: dict[str, bool] = {}
+    for line in stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        content = (event.get("message") or {}).get("content") if isinstance(event, dict) else None
+        for block in content if isinstance(content, list) else []:
+            if not isinstance(block, dict):
+                continue
+            if block.get("type") == "tool_use":
+                uses[block.get("id")] = block
+            elif block.get("type") == "tool_result":
+                errors[block.get("tool_use_id")] = bool(block.get("is_error"))
+    failures = []
+    if not any(u.get("name") == "Skill" and "travel-planner" in str((u.get("input") or {}).get("skill", ""))
+               for u in uses.values()):
+        failures.append("the agent never loaded the travel-planner skill through its Skill tool")
+    if not any(u.get("name") == "Bash" and "check_plan.py" in str((u.get("input") or {}).get("command", ""))
+               and errors.get(tool_id) is False for tool_id, u in uses.items()):
+        failures.append("the agent never ran check_plan.py successfully (denied, failed, or not called)")
+    return failures
+
+
+TRANSCRIPT_CHECKS = {"claude-code": claude_transcript_failures}
+
+
 def run_agent(agent: str, binary: str | None, prompt: str, timeout: int, allow_cursor_force: bool,
               runner=subprocess.run) -> Result:
     if binary is None:
@@ -168,6 +215,8 @@ def run_agent(agent: str, binary: str | None, prompt: str, timeout: int, allow_c
     if completed.returncode != 0:
         return Result(agent, "fail", f"exited {completed.returncode}", workspace)
     failures = evaluate_plan(os.path.join(workspace, PLAN_NAME))
+    if agent in TRANSCRIPT_CHECKS:
+        failures += TRANSCRIPT_CHECKS[agent](completed.stdout or "")
     if failures:
         return Result(agent, "fail", "; ".join(failures), workspace)
     remove_workspace(workspace)
