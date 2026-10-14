@@ -69,6 +69,6 @@ outside this conversation.
 ### What to do with the result
 
 If a reservation is booked, add it to the relevant day's schedule table in
-the trip plan (see `../core/output-format-spec.md`) as its own row, so it shows up
+the trip plan (see `../references/output-format-spec.md`) as its own row, so it shows up
 on the exported calendar like any other scheduled item — a reservation is
 exactly the kind of fixed-time commitment the calendar export exists for.

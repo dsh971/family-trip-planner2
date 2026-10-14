@@ -11,15 +11,14 @@ From the repo root:
 
 ```bash
 mkdir -p ~/.claude/skills
-ln -s "$PWD/adapters/claude-code/skills/travel-planner" ~/.claude/skills/travel-planner
+ln -s "$PWD/skills/travel-planner" ~/.claude/skills/travel-planner
 ```
 
 Use a project's `.claude/skills/` instead of `~/.claude/skills/` to make it
 available in one project only. Then ask Claude Code to plan a family trip,
 or invoke it with `/travel-planner`.
 
-The skill folder contains relative symlinks — `core`, `integrations`,
-`tools` — back into this repo, so the skill's paths resolve no matter which
+The skill folder is self-contained, so its paths resolve no matter which
 directory you run Claude Code from. Moving the repo breaks the install
 symlink; re-run the `ln -s` above from the new location.
 

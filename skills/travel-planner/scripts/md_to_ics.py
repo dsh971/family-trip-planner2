@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a trip-plan markdown file (see core/output-format-spec.md) into a
+"""Convert a trip-plan markdown file (see ../references/output-format-spec.md) into a
 standard .ics calendar file. Stdlib only — no pip install required.
 
 Usage:
@@ -15,7 +15,7 @@ The only things this script reads from the input file:
     "HH:MM" or "HH:MM <IANA zone>".
 
 Everything else in the file (prose sections, other frontmatter fields) is
-ignored. See core/output-format-spec.md for the full contract this script
+ignored. See ../references/output-format-spec.md for the full contract this script
 implements.
 """
 import hashlib

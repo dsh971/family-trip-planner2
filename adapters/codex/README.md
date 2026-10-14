@@ -1,14 +1,14 @@
 # TODO
 
-Not yet implemented. See `core/` for the platform-agnostic methodology and
-`core/output-format-spec.md` for the required output shape — any adapter
+Not yet implemented. See `skills/travel-planner/references/` for the platform-agnostic methodology and
+`skills/travel-planner/references/output-format-spec.md` for the required output shape — any adapter
 implementation must produce output conforming to that spec so
-`tools/md-to-ics/md_to_ics.py` keeps working unmodified.
+`skills/travel-planner/scripts/md_to_ics.py` keeps working unmodified.
 
 Open questions to resolve when building this adapter:
 
 - Can Codex load the Claude Code adapter's `skills/travel-planner/` folder
-  (a `SKILL.md` plus symlinks to `core/`, `integrations/`, `tools/`) as-is,
+  (a `SKILL.md` plus its `references/`, `integrations/`, and `scripts/` folders) as-is,
   or does it need its own wrapper?
 - What's the equivalent of Claude Code's `tools:` frontmatter field for
   granting Bash/WebSearch/WebFetch access in a Codex agent definition?
@@ -18,5 +18,5 @@ Open questions to resolve when building this adapter:
   skill/prompt mechanism is the closer analog to Claude Code's
   `skills/travel-planner/SKILL.md`.
 
-The `core/` and `integrations/` docs should all work as-is once the adapter
+The `skills/travel-planner/references/` and `integrations/` docs should all work as-is once the adapter
 wrapper exists, since Codex's sandbox also provides shell access and the `pp-*` CLIs are plain binaries, not Claude-specific.

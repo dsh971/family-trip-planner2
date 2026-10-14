@@ -10,13 +10,13 @@ calendar.
 
 ## Where the methodology lives
 
-This skill's base directory contains `core/`, `integrations/`, and `tools/`
-(symlinks into the travel-planner2 repo). Every path below is relative to
-that base directory — not to the current working directory.
+This skill's base directory contains `references/`, `integrations/`, and
+`scripts/`. Every path below is relative to that base directory — not to the
+current working directory.
 
-`core/` is the methodology you follow. It is written as plain instructions,
+`references/` is the methodology you follow. It is written as plain instructions,
 not as a description of your own behavior — read it, don't paraphrase it
-from memory. Read `core/00-overview.md` first; it tells you what order to
+from memory. Read `references/00-overview.md` first; it tells you what order to
 read the rest in.
 
 ## Workflow
@@ -25,11 +25,11 @@ read the rest in.
    read it and treat it as the living document — edit it in place, never
    regenerate it, so their own edits survive. If any city in its `cities`
    frontmatter is still `status: outlined`, resume there (see "Resuming an
-   interrupted session" in `core/city-planning-loop.md`). To change a city
+   interrupted session" in `references/city-planning-loop.md`). To change a city
    that's already planned, follow "Revising one city" in
-   `core/itinerary-and-pacing.md`.
+   `references/itinerary-and-pacing.md`.
 
-1. **Trip outline intake.** Follow `core/intake-questions.md`. Ask the
+1. **Trip outline intake.** Follow `references/intake-questions.md`. Ask the
    "always ask" questions together, in one turn, and wait for the answers
    before researching. Ask the flight questions only if the traveler wants
    flight search. Use `AskUserQuestion` for questions with a few fixed
@@ -38,22 +38,22 @@ read the rest in.
    and addresses as free text.
 
 2. **Write the outline.** Right after intake, write the plan file per
-   `core/output-format-spec.md` and "Right after intake" in
-   `core/intake-questions.md` — every city `status: outlined`, every day
+   `references/output-format-spec.md` and "Right after intake" in
+   `references/intake-questions.md` — every city `status: outlined`, every day
    heading present with only its fixed rows. Save as
    `<a reasonable filename>.md`; ask the traveler where, or default to the
    current working directory.
 
 3. **Plan each city.** For each `outlined` city in travel order, run
-   `core/city-planning-loop.md` end to end. Research follows
-   `core/research-methodology.md` and `core/corroboration-and-trust.md`,
+   `references/city-planning-loop.md` end to end. Research follows
+   `references/research-methodology.md` and `references/corroboration-and-trust.md`,
    using web search anchored on each must-visit place per
    `integrations/place-research-tools.md`. For restaurants in Japan, check
    whether `tabelog-pp-cli` is installed (`command -v tabelog-pp-cli`) and
    use it if so. Don't use `wanderlust-goat-pp-cli` even if it's installed
    — its discovery commands need a Google Places key (see that doc).
-   Schedule per `core/itinerary-and-pacing.md`,
-   write short descriptions per `core/preview-content-rules.md`, and save
+   Schedule per `references/itinerary-and-pacing.md`,
+   write short descriptions per `references/preview-content-rules.md`, and save
    the city before starting the next one.
 
 4. **Flights, if requested.** Follow
@@ -69,12 +69,12 @@ read the rest in.
 6. **Offer the calendar export.** Once every city is planned (or whenever
    the traveler asks — a half-planned file converts too), offer to run:
    ```
-   python3 <this skill's base directory>/tools/md-to-ics/md_to_ics.py <trip-plan.md> <output.ics>
+   python3 <this skill's base directory>/scripts/md_to_ics.py <trip-plan.md> <output.ics>
    ```
    Report the script's own output (event count, or the error message if the
    markdown doesn't conform to the spec — fix the markdown and retry rather
    than asking the traveler to debug it). Deviating from the day-table shape
-   or heading pattern in `core/output-format-spec.md` breaks this step.
+   or heading pattern in `references/output-format-spec.md` breaks this step.
 
 ## Pick lists in the terminal
 

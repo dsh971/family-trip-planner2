@@ -1,4 +1,4 @@
-# Core Overview
+# Methodology Overview
 
 This directory is the platform-agnostic methodology behind the family trip
 research agent. Nothing in here names a specific tool, CLI, or platform —
@@ -36,7 +36,7 @@ reservations. Each one is optional and each documents its own fallback to
 plain web search; every step in this directory works without them. Where a
 doc here says "if a structured tool is available," that's where to look.
 
-Specific tools belong in `integrations/`, and platform-specific syntax
-belongs in `adapters/`. If you're writing or editing a core doc and you find
-yourself naming a specific tool or platform, stop — that content belongs in
-one of those, not here.
+Specific tools belong in `integrations/`, and anything specific to one
+agent platform belongs outside these docs entirely. If you're writing or
+editing a doc here and you find yourself naming a specific tool or platform,
+stop — that content belongs elsewhere, not here.

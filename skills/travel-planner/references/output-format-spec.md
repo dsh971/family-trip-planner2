@@ -1,10 +1,8 @@
 # Output Format Spec: the Trip Plan Document
 
 This is the single source of truth for the trip-plan markdown shape. Every
-adapter must produce output that conforms to this spec exactly — the table
-shape in particular is what makes calendar (`.ics`) export possible. If you
-change anything here, update `tools/md-to-ics/md_to_ics.py`'s parser and
-`examples/trip-plans/sample-trip-lilliput.md` in the same change.
+agent must produce output that conforms to this spec exactly — the table
+shape in particular is what makes calendar (`.ics`) export possible.
 
 ## Why this shape
 
@@ -133,7 +131,7 @@ In order:
      and the alternatives offered, e.g. "Day 2 lunch: The Thimble Café
      (also offered: Pocket Pizza, Main Square Deli)".
    When it's written is part of the planning loop (`city-planning-loop.md`,
-   steps 3 and 7). Follow `core/corroboration-and-trust.md` for how to
+   steps 3 and 7). Follow `corroboration-and-trust.md` for how to
    back claims here — e.g. a highlight should note it has 2+ independent
    source mentions, a safety note should cite its official source and say
    what level it covers (country, region, city), since an advisory that
@@ -149,7 +147,7 @@ In order:
    already made — or no rows at all.
 5. `## Needs Attention` — bullet list of anything that didn't fit in any
    day's capacity. Never omit this section if something didn't fit — see
-   `core/itinerary-and-pacing.md`'s "never silently drop" rule. If nothing
+   `itinerary-and-pacing.md`'s "never silently drop" rule. If nothing
    needed to be cut, the section may say so plainly ("Everything fit.") or be
    omitted entirely — omission means "nothing to report," not "didn't check."
    On a multi-city trip, start each item with its city ("Blefuscu: ...").
@@ -195,7 +193,7 @@ Rules:
 - `Notes` becomes the `.ics` event's `DESCRIPTION`. Use it for anything that
   doesn't fit the title: confirmation status, accessibility notes, whether a
   fact (like hours) is unconfirmed — never invent a fact to fill this cell;
-  say "unconfirmed" instead, per `core/preview-content-rules.md`.
+  say "unconfirmed" instead, per `preview-content-rules.md`.
 - A nap/rest or other blocking pacing window still gets a row, like any
   other scheduled item — it occupies real time and should show up on the
   calendar, even though nothing is "visited."

@@ -3,18 +3,18 @@
 Like `flight-search-integration.md`, this doc documents specific external
 tools rather than pure methodology. Place research everywhere runs on plain
 web search, with the cross-source judgment in
-`../core/corroboration-and-trust.md` applied by hand. The one CLI here,
+`../references/corroboration-and-trust.md` applied by hand. The one CLI here,
 Tabelog, is an optional extra for restaurants in Japan.
 
 ## Capability gate
 
 Same as flight search: these are CLIs you shell out to. If you can't run
 commands, use plain web search, applying
-`../core/corroboration-and-trust.md`'s judgment by hand.
+`../references/corroboration-and-trust.md`'s judgment by hand.
 
 ## Finding suggestions around a must-visit place
 
-In the per-city planning loop (`../core/city-planning-loop.md`, step 2),
+In the per-city planning loop (`../references/city-planning-loop.md`, step 2),
 search once per must-visit place, with that place in the query — the
 neighborhood, attraction, or day-trip town the traveler named (e.g. "best
 things to see in Balboa Park", "kid-friendly places near Sagrada Família")
@@ -79,12 +79,12 @@ and search the web instead.
 
 The tool distinguishes listed budgets from review-estimated ones, and
 leaves unknown values unpopulated rather than inferring them — the same
-"never fabricate" discipline as `../core/preview-content-rules.md`.
+"never fabricate" discipline as `../references/preview-content-rules.md`.
 
 ## What to do with the results
 
 Fold corroborated picks into the `## Destination Research` section's
 highlights and the day-by-day schedule, same as any other researched place
 — this is a better-sourced input to the same methodology in
-`../core/research-methodology.md`/`../core/itinerary-and-pacing.md`, not a separate output
+`../references/research-methodology.md`/`../references/itinerary-and-pacing.md`, not a separate output
 format.

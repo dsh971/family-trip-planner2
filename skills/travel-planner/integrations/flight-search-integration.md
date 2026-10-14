@@ -1,8 +1,8 @@
 # Flight Search Integration
 
-Documents a specific external tool, unlike the methodology in `core/`.
+Documents a specific external tool, unlike the methodology in `../references/`.
 Only use this when the traveler asked for flight search or flight
-information (see `../core/intake-questions.md` — don't volunteer this for a
+information (see `../references/intake-questions.md` — don't volunteer this for a
 trip where flights are already booked or weren't mentioned).
 
 ## Capability gate: shell/command execution required
@@ -51,7 +51,7 @@ rather than a human-formatted table.
 Add `--currency <ISO-4217 code>` if the traveler's booking currency differs
 from the default. Add `--stops`, `--class`, `--airlines`, or `--time H-H` to
 apply filters the traveler specified during intake (e.g. nonstop-only for a
-trip with small children — see `../core/intake-questions.md`).
+trip with small children — see `../references/intake-questions.md`).
 
 Parse the response's `.results` field (the envelope also carries `.meta`
 with `source` and `synced_at` — worth noting in the output if `source` is
@@ -67,17 +67,17 @@ status, point them to the airline's app or website.
 
 ### What to do with the result
 
-Follow `../core/research-methodology.md`'s "Flights and reservations"
+Follow `../references/research-methodology.md`'s "Flights and reservations"
 section — the presentation rules are the same whatever the source. Booking
 links are in each result's `booking_urls`. A flight row in the day table
 marks each time with its own zone, e.g. `| 08:00 Europe/Lisbon | 10:30
 Europe/London | Flight XY123 LIS → LHR | Lisbon Airport (LIS) | Economy, not
-yet booked |` (see `../core/output-format-spec.md`).
+yet booked |` (see `../references/output-format-spec.md`).
 
 ## Fallback: no shell access, or the CLI isn't installed/working
 
 Fall back to a plain web search for flight options (e.g. search "flights
 <origin> to <destination> <dates>" and read the results directly). Be
 explicit in the output that this came from general web search rather than a
-structured flight-search tool, as `../core/research-methodology.md`
+structured flight-search tool, as `../references/research-methodology.md`
 requires.
