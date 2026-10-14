@@ -1,0 +1,24 @@
+name: checks
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+        with:
+          python-version: "3.12"
+      - name: Unit and package tests
+        run: python3 -m unittest discover -s tests -v
+      - name: Sample converts to a calendar
+        run: python3 skills/travel-planner/scripts/md_to_ics.py examples/trip-plans/sample-trip-lilliput.md "$RUNNER_TEMP/sample.ics"
+      - name: Sample passes the plan checker
+        run: python3 skills/travel-planner/scripts/check_plan.py examples/trip-plans/sample-trip-lilliput.md
+      - name: Skill installs for Claude Code, Codex, and Cursor
+        run: python3 tests/install_smoke.py

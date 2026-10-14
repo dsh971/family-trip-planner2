@@ -27,8 +27,8 @@ starts. If it can happen on the go, the rest row can be wherever the day is
 
 ## Build each day around the traveler's must-visit places
 
-Each city's days are built only from what the traveler named and picked
-(`city-planning-loop.md`, step 3, says what else may be scheduled). Give
+Each city's days are built only from what the traveler named and picked,
+or what was chosen for them in pick-for-me mode (`city-planning-loop.md`, step 3, says what else may be scheduled). Give
 each day a center: a must-visit place
 (an anchor), with the picks grouped under it on the same day. A pick that
 doesn't fit on its anchor's day goes on another day of the same city —
@@ -118,8 +118,8 @@ own edits survive.
 
 ## Never silently drop something that didn't fit
 
-If a day (or the whole trip) fills up before everything the traveler named
-or picked fits, don't just quietly leave it out of the plan. List it
+If a day (or the whole trip) fills up before everything the traveler named,
+picked, or had chosen for them fits, don't just quietly leave it out of the plan. List it
 explicitly under "Needs Attention" in the output, with a one-line reason it
 didn't fit (ran out of day capacity, didn't clear the detour time budget,
 etc.) — see `output-format-spec.md`. The traveler should always be able to

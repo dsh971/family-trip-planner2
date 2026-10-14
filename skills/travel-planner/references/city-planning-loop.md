@@ -9,6 +9,30 @@ session — starts from the file, not from memory.
 The traveler's own must-visit places are the backbone of each city's plan.
 Research fills in around them; it doesn't replace them.
 
+## Pick-for-me mode
+
+When the traveler asked for a plan without being asked questions ("pick for
+me", "don't ask"), every point below where the traveler would decide uses
+its default instead, and each default you apply is recorded under "Open
+Questions for the Traveler" so they can change it later:
+
+- **Must-visit places (step 1)** — use the places the traveler already
+  named, if any; otherwise the city's top places as in step 2.
+- **Which suggestions to schedule (step 3)** — the highest-ranked ones that
+  fit the city's time (step 5). Record them under **Chosen for you**, not
+  **Picked from suggestions**.
+- **A named place that can't work (step 4)** — keep it, and list it under
+  both "Needs Attention" and "Open Questions for the Traveler".
+- **A day-trip town when the nap needs a bed (step 4)** — the half-day
+  visit around the nap.
+- **Picks that need more time than there is (step 5)** — drop the
+  lowest-ranked to **Suggested, not picked**.
+- **A half day or more left open (step 5)** — leave it open and say so.
+- **Restaurants, when help with every meal is on (step 7)** — the top option
+  for each meal, marked "chosen for you" in **Meals**.
+- **A restaurant that takes reservations** — never book it; list it under
+  "Open Questions for the Traveler".
+
 ## 1. Ask for must-visit places
 
 Ask: "Are there specific places in <city> you plan to visit?" Each answer
@@ -66,9 +90,10 @@ whether the traveler has places of their own to add there.
 
 Show the suggestions grouped by anchor, as choices the traveler can tick.
 Also let them type in places of their own. Nothing is scheduled unless the
-traveler named it or picked it — travel, rest, bedtime, and meal slots are
-the only exceptions, and a meal slot names a specific venue only when the
-traveler named or picked one.
+traveler named it or picked it, or it was chosen for them in pick-for-me
+mode — travel, rest, bedtime, and meal slots are the only exceptions, and a
+meal slot names a specific venue only when one was named, picked, or chosen
+that way.
 
 A place the traveler types in becomes an anchor. Clarify it as in step 1
 and check it as in step 4; it doesn't get its own round of suggestions.
@@ -155,10 +180,17 @@ alternatives not chosen in the city's places record (**Meals**, see
 a picked restaurant takes reservations, offer to book it with the
 reservation step.
 
-## 8. Save
+## 8. Check and save
 
-Set the city's `status` to `planned`. Then start the next `outlined` city
-at step 1.
+Check the plan before saving it. If you can run commands, run
+`../scripts/check_plan.py` on the plan file; otherwise apply the rules in
+`output-format-spec.md`'s "Checking a plan" by reading. Fix every error and
+check again. An error you can't fix — a booked flight inside the bedtime
+window, say — goes under "Needs Attention" by its row title, which marks it
+acknowledged. Warnings don't block saving.
+
+Then set the city's `status` to `planned`, and start the next `outlined`
+city at step 1.
 
 ## Resuming an interrupted session
 

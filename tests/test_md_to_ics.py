@@ -1,20 +1,24 @@
 """Tests for md_to_ics.py. Stdlib only.
 
 Run from the repo root:
-    python3 -m unittest discover -s tools/md-to-ics -v
+    python3 -m unittest discover -s tests -v
 """
 import contextlib
 import io
 import os
 import re
+import sys
 import tempfile
 import unittest
 from unittest import mock
 
-import md_to_ics
-
 HERE = os.path.dirname(os.path.abspath(__file__))
-SAMPLE = os.path.join(HERE, "..", "..", "examples", "trip-plans", "sample-trip-lilliput.md")
+REPO = os.path.dirname(HERE)
+sys.path.insert(0, os.path.join(REPO, "skills", "travel-planner", "scripts"))
+
+import md_to_ics  # noqa: E402
+
+SAMPLE = os.path.join(REPO, "examples", "trip-plans", "sample-trip-lilliput.md")
 
 HEADER = "| Start | End | Title | Location | Notes |\n|---|---|---|---|---|\n"
 
@@ -231,7 +235,7 @@ class DstTest(unittest.TestCase):
 
 
 class MultiCityFormatTest(unittest.TestCase):
-    """The multi-city trip-file shape (core/output-format-spec.md) must convert
+    """The multi-city trip-file shape (references/output-format-spec.md) must convert
     with the converter unchanged: it ignores the `cities` list and reads the
     city name in a day heading as plain text."""
 

@@ -1,10 +1,8 @@
 # Output Format Spec: the Trip Plan Document
 
 This is the single source of truth for the trip-plan markdown shape. Every
-adapter must produce output that conforms to this spec exactly — the table
-shape in particular is what makes calendar (`.ics`) export possible. If you
-change anything here, update `tools/md-to-ics/md_to_ics.py`'s parser and
-`examples/trip-plans/sample-trip-lilliput.md` in the same change.
+agent must produce output that conforms to this spec exactly — the table
+shape in particular is what makes calendar (`.ics`) export possible.
 
 ## Why this shape
 
@@ -123,17 +121,39 @@ In order:
    (e.g. `### Neighborhoods`, `### Must-Visit Highlights`, `### Flights`,
    `### Safety Notes`). Each city also gets a `### <City>: places` record of
    the traveler's choices, which revisions rely on to know what must not be
-   dropped:
+   dropped. Each group is a bold label on its own line followed by a bullet
+   list, one place per bullet, written `- <Place name>` with an optional
+   note in parentheses after it — the plan checker reads the name before the
+   parentheses, so never put two places on one line. Omit a group with
+   nothing in it.
    - **Named by you** — the traveler's must-visit places (anchors).
    - **Picked from suggestions** — suggestions the traveler chose.
+   - **Chosen for you** — suggestions chosen on the traveler's behalf when
+     they asked for a plan without picking ("pick for me").
    - **Suggested, not picked** — kept so a later revision can offer them
      again without new research.
    - **Meals** — only when the traveler asked for help with every meal:
-     one line per lunch or dinner with the restaurant picked (or "none")
-     and the alternatives offered, e.g. "Day 2 lunch: The Thimble Café
-     (also offered: Pocket Pizza, Main Square Deli)".
+     one bullet per lunch or dinner, written
+     `- Day N lunch: <restaurant>` or `- Day N dinner: <restaurant>`,
+     followed by an optional note in parentheses. End the note with
+     "chosen for you" when the agent chose the restaurant, and write `none`
+     as the restaurant for a meal the traveler skipped, e.g.
+     "- Day 2 lunch: The Thimble Café (also offered: Pocket Pizza)".
+   ```markdown
+   ### Lilliput: places
+
+   **Named by you:**
+   - Royal Gardens (attraction)
+
+   **Picked from suggestions:**
+   - Taverna Minor (near the Royal Gardens)
+
+   **Meals:**
+   - Day 1 lunch: Taverna Minor (picked with the Royal Gardens suggestions)
+   - Day 1 dinner: none (you skipped this one)
+   ```
    When it's written is part of the planning loop (`city-planning-loop.md`,
-   steps 3 and 7). Follow `core/corroboration-and-trust.md` for how to
+   steps 3 and 7). Follow `corroboration-and-trust.md` for how to
    back claims here — e.g. a highlight should note it has 2+ independent
    source mentions, a safety note should cite its official source and say
    what level it covers (country, region, city), since an advisory that
@@ -149,10 +169,17 @@ In order:
    already made — or no rows at all.
 5. `## Needs Attention` — bullet list of anything that didn't fit in any
    day's capacity. Never omit this section if something didn't fit — see
-   `core/itinerary-and-pacing.md`'s "never silently drop" rule. If nothing
+   `itinerary-and-pacing.md`'s "never silently drop" rule. If nothing
    needed to be cut, the section may say so plainly ("Everything fit.") or be
    omitted entirely — omission means "nothing to report," not "didn't check."
    On a multi-city trip, start each item with its city ("Blefuscu: ...").
+   An item about a place from a places record leads with that place's name,
+   right after the city ("**Blefuscu: Emperor's Palace** (named by you)
+   isn't scheduled..."); the plan checker only counts an item for a place it
+   leads with.
+   A rule break the plan checker reports but that can't be fixed (a booked
+   06:00 flight inside the bedtime window, say) is listed here by its row
+   title, which marks it as acknowledged.
 6. `## Open Questions for the Traveler` — bullet list of anything the
    research couldn't resolve and needs the traveler's input (e.g. "Hotel not
    yet booked — Day 2's walking radius assumes the Hotel Lilliput Central
@@ -160,6 +187,9 @@ In order:
    each item with its city, as in Needs Attention.
 
 ## Day table shape
+
+Meal rows are titled starting with "Lunch" or "Dinner" ("Lunch at Taverna
+Minor", "Dinner near the inn"), so the plan checker can find them.
 
 Immediately under each `## Day N — YYYY-MM-DD (Weekday)` heading:
 
@@ -195,7 +225,7 @@ Rules:
 - `Notes` becomes the `.ics` event's `DESCRIPTION`. Use it for anything that
   doesn't fit the title: confirmation status, accessibility notes, whether a
   fact (like hours) is unconfirmed — never invent a fact to fill this cell;
-  say "unconfirmed" instead, per `core/preview-content-rules.md`.
+  say "unconfirmed" instead, per `preview-content-rules.md`.
 - A nap/rest or other blocking pacing window still gets a row, like any
   other scheduled item — it occupies real time and should show up on the
   calendar, even though nothing is "visited."
@@ -206,6 +236,40 @@ Rules:
 - Rows in sections other than a `## Day N — ...` table (e.g. a markdown table
   accidentally included under `## Destination Research`) are never
   calendar events — only tables directly under a day heading are in scope.
+
+## Checking a plan
+
+`../scripts/check_plan.py <trip-plan.md>` checks a plan against this spec:
+the plan must convert to a calendar; no row may overlap a blocking window
+unless it is that window's own row; every place named, picked, or chosen in a
+places record, and every Meals restaurant, must appear in a day's rows or
+under Needs Attention; with more than one city, every day heading names a
+city whose dates cover it; and every `planned` city has a places record. A
+day with no Lunch or Dinner row is a warning, not a failure. Exit code `0`
+means no unacknowledged errors, `1` means errors, `2` means the file couldn't
+be read.
+
+What the checker counts:
+
+- **A window's own row** has exactly the window's times and its title names
+  the window ("Nap / rest at hotel" for `nap`). Any other row inside the
+  window is an overlap.
+- **Times** are compared on the day's clock: a cell that names its own zone
+  is converted first, so `07:30 Europe/Paris` on a London day is 06:30.
+- **A row visits a place** when its title names the place in full, the way
+  the places record writes it (a leading "The" may be dropped). A mention
+  right after "to", "from", "near", or "toward" ("Travel to Mildendo Sea
+  Cliffs") is travel, not a visit, and a name that is only part of a longer
+  name in any places record ("Old Harbour" in "Lunch at Old Harbour
+  Bakery") doesn't count. A place noted `(neighborhood)` is also visited by
+  any row whose Location names it.
+- **Spelling** is compared loosely: case, accents, apostrophes, a
+  possessive "'s", and "&" versus "and" don't matter ("Thimble Cafe" names
+  "The Thimble Café").
+- **A Needs Attention item** covers a place only when it leads with the
+  place's name, after an optional "City:".
+- **A Meals restaurant** must be named in full in that day's Lunch or Dinner
+  row title.
 
 ## Time zones
 
