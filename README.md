@@ -39,7 +39,7 @@ search, restaurant reservations.
 ## Quick start
 
 ```bash
-npx skills add dsh971/travel-planner2 --skill travel-planner
+npx skills add dsh971/family-trip-planner2 --skill travel-planner
 ```
 
 That installs the skill into Claude Code, Codex, Cursor, or any other agent

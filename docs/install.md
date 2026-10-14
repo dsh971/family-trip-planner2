@@ -6,7 +6,7 @@ that reads skills in the Agent Skills format (`SKILL.md`) can load it.
 ## One command
 
 ```bash
-npx skills add dsh971/travel-planner2 --skill travel-planner
+npx skills add dsh971/family-trip-planner2 --skill travel-planner
 ```
 
 This uses the [`skills` installer](https://www.npmjs.com/package/skills),
