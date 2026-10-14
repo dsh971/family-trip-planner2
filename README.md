@@ -34,30 +34,28 @@ search, restaurant reservations.
     Google/Apple/Outlook calendars.
 - **`tests/`** — stdlib tests for the scripts.
 - **`examples/`** — a worked example trip plan, used as a test fixture too.
-- **`adapters/`** — setup notes for platforms other than skill-reading
-  agents.
+- **`docs/`** — the install guide and the plans behind each change.
 
 ## Quick start
 
-**Claude Code:** see `adapters/claude-code/README.md` — symlink
-`skills/travel-planner` into `~/.claude/skills/` and ask Claude Code to plan a
-trip (or run `/travel-planner`).
+```bash
+npx skills add dsh971/travel-planner2 --skill travel-planner
+```
 
-**claude.ai:** see `adapters/claude-ai/README.md` — add
-`skills/travel-planner/references/` to a Project's knowledge and ask Claude
-to follow it, producing an Artifact.
-
-**Codex / Perplexity:** not yet built — see the TODO notes in
-`adapters/codex/README.md` and `adapters/perplexity/README.md`.
+That installs the skill into Claude Code, Codex, Cursor, or any other agent
+that reads `SKILL.md` skills. Then ask your agent to plan a family trip — or
+say "pick for me" to get a full plan without being asked questions. See
+`docs/install.md` for installing by hand, what the skill needs from the
+agent, and the current state of chat-app support.
 
 ## Optional tool integrations
 
-The Claude Code skill can shell out to external CLIs from the third-party
+The skill can shell out to external CLIs from the third-party
 [Printing Press](https://printingpress.dev/) project when they're installed,
 falling back to plain web search otherwise. You install them yourself — the
 skill checks for them but never installs anything — with commands pinned to
 the package version these docs were tested against
-(`@mvanhorn/printing-press-library@0.1.21`; see `adapters/claude-code/README.md`):
+(`@mvanhorn/printing-press-library@0.1.21`; see `docs/install.md`):
 
 - [`flight-goat`](https://printingpress.dev/library/travel/flight-goat) —
   flight search (Google Flights, Kayak, FlySoar), no API key required.
@@ -123,9 +121,11 @@ and leaves the old one in place, to be deleted by hand.
 
 ```bash
 python3 -m unittest discover -s tests -v   # from the repo root
+python3 tests/install_smoke.py             # installs with the real installer; needs npx
 ```
 
-The tests also convert `examples/trip-plans/sample-trip-lilliput.md`, so a
+GitHub Actions runs both on every push (`.github/workflows/checks.yml`). The
+tests also convert `examples/trip-plans/sample-trip-lilliput.md`, so a
 spec change that breaks the example fails the suite.
 
 ## Non-goals
