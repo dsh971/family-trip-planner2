@@ -121,15 +121,37 @@ In order:
    (e.g. `### Neighborhoods`, `### Must-Visit Highlights`, `### Flights`,
    `### Safety Notes`). Each city also gets a `### <City>: places` record of
    the traveler's choices, which revisions rely on to know what must not be
-   dropped:
+   dropped. Each group is a bold label on its own line followed by a bullet
+   list, one place per bullet, written `- <Place name>` with an optional
+   note in parentheses after it — the plan checker reads the name before the
+   parentheses, so never put two places on one line. Omit a group with
+   nothing in it.
    - **Named by you** — the traveler's must-visit places (anchors).
    - **Picked from suggestions** — suggestions the traveler chose.
+   - **Chosen for you** — suggestions chosen on the traveler's behalf when
+     they asked for a plan without picking ("pick for me").
    - **Suggested, not picked** — kept so a later revision can offer them
      again without new research.
    - **Meals** — only when the traveler asked for help with every meal:
-     one line per lunch or dinner with the restaurant picked (or "none")
-     and the alternatives offered, e.g. "Day 2 lunch: The Thimble Café
-     (also offered: Pocket Pizza, Main Square Deli)".
+     one bullet per lunch or dinner, written
+     `- Day N lunch: <restaurant>` or `- Day N dinner: <restaurant>`,
+     followed by an optional note in parentheses. End the note with
+     "chosen for you" when the agent chose the restaurant, and write `none`
+     as the restaurant for a meal the traveler skipped, e.g.
+     "- Day 2 lunch: The Thimble Café (also offered: Pocket Pizza)".
+   ```markdown
+   ### Lilliput: places
+
+   **Named by you:**
+   - Royal Gardens (attraction)
+
+   **Picked from suggestions:**
+   - Taverna Minor (near the Royal Gardens)
+
+   **Meals:**
+   - Day 1 lunch: Taverna Minor (picked with the Royal Gardens suggestions)
+   - Day 1 dinner: none (you skipped this one)
+   ```
    When it's written is part of the planning loop (`city-planning-loop.md`,
    steps 3 and 7). Follow `corroboration-and-trust.md` for how to
    back claims here — e.g. a highlight should note it has 2+ independent
@@ -151,6 +173,9 @@ In order:
    needed to be cut, the section may say so plainly ("Everything fit.") or be
    omitted entirely — omission means "nothing to report," not "didn't check."
    On a multi-city trip, start each item with its city ("Blefuscu: ...").
+   A rule break the plan checker reports but that can't be fixed (a booked
+   06:00 flight inside the bedtime window, say) is listed here by its row
+   title, which marks it as acknowledged.
 6. `## Open Questions for the Traveler` — bullet list of anything the
    research couldn't resolve and needs the traveler's input (e.g. "Hotel not
    yet booked — Day 2's walking radius assumes the Hotel Lilliput Central
@@ -158,6 +183,9 @@ In order:
    each item with its city, as in Needs Attention.
 
 ## Day table shape
+
+Meal rows are titled starting with "Lunch" or "Dinner" ("Lunch at Taverna
+Minor", "Dinner near the inn"), so the plan checker can find them.
 
 Immediately under each `## Day N — YYYY-MM-DD (Weekday)` heading:
 
@@ -204,6 +232,18 @@ Rules:
 - Rows in sections other than a `## Day N — ...` table (e.g. a markdown table
   accidentally included under `## Destination Research`) are never
   calendar events — only tables directly under a day heading are in scope.
+
+## Checking a plan
+
+`../scripts/check_plan.py <trip-plan.md>` checks a plan against this spec:
+the plan must convert to a calendar; no row may overlap a blocking window
+unless it is that window's own row; every place named, picked, or chosen in a
+places record, and every Meals restaurant, must appear in a day's rows or
+under Needs Attention; with more than one city, every day heading names a
+city whose dates cover it; and every `planned` city has a places record. A
+day with no Lunch or Dinner row is a warning, not a failure. Exit code `0`
+means no unacknowledged errors, `1` means errors, `2` means the file couldn't
+be read.
 
 ## Time zones
 

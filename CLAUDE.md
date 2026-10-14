@@ -23,11 +23,12 @@ Links resolve from the file that contains them: `SKILL.md` names
 `references/x.md`; a doc in `references/` names a sibling as `x.md`, an
 integration doc as `../integrations/x.md`, and a script as `../scripts/x.py`.
 
-`scripts/md_to_ics.py`'s contract is `references/output-format-spec.md`. If
-you change the day-table shape or the frontmatter fields it reads, update the
-parser, the spec, and `examples/trip-plans/sample-trip-lilliput.md` in the
-same change, then re-run the converter against the example and run the tests
-with `python3 -m unittest discover -s tests -v`.
+`scripts/md_to_ics.py` and `scripts/check_plan.py` share one contract,
+`references/output-format-spec.md`. If you change the day-table shape, the
+frontmatter fields they read, or the places-record format, update the scripts,
+the spec, and `examples/trip-plans/sample-trip-lilliput.md` in the same
+change, then run both scripts against the example and run the tests with
+`python3 -m unittest discover -s tests -v`.
 
 Tests, fixtures, and examples live outside the skill folder (`tests/`,
 `examples/`) so nothing test-only ships to travelers.

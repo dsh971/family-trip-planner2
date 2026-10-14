@@ -79,36 +79,44 @@ is on its edge.
 
 ### Lilliput: places
 
-- **Named by you:** Royal Gardens (attraction); Mildendo Sea Cliffs
-  (attraction, about 45 minutes from the hotel).
-- **Picked from suggestions:** Taverna Minor and the Museum of Miniatures
-  (both near the Royal Gardens); the Royal Library children's room (near the
-  Royal Gardens).
-- **Suggested, not picked:** Lilliput Toy Market (near the Royal Gardens).
-- **Meals:**
-  - Day 1 lunch: Taverna Minor (picked with the Royal Gardens suggestions).
-  - Day 1 dinner: The Thimble Café (also offered: Main Square Deli).
-  - Day 2 lunch: Pocket Pizza (also offered: Main Square Deli, The Thimble
-    Café).
-  - Day 2 dinner: Main Square Deli (also offered: Pocket Pizza).
+**Named by you:**
+- Royal Gardens (attraction)
+- Mildendo Sea Cliffs (attraction, about 45 minutes from the hotel)
+
+**Picked from suggestions:**
+- Taverna Minor (near the Royal Gardens)
+- Museum of Miniatures (near the Royal Gardens)
+- Royal Library children's room (near the Royal Gardens)
+
+**Suggested, not picked:**
+- Lilliput Toy Market (near the Royal Gardens)
+
+**Meals:**
+- Day 1 lunch: Taverna Minor (picked with the Royal Gardens suggestions)
+- Day 1 dinner: The Thimble Café (also offered: Main Square Deli)
+- Day 2 lunch: Pocket Pizza (also offered: Main Square Deli, The Thimble Café)
+- Day 2 dinner: Main Square Deli (also offered: Pocket Pizza)
 
 ### Blefuscu: places
 
-- **Named by you:** Old Harbour (neighborhood); Imperial Fleet Museum
-  (attraction); Emperor's Palace (attraction — see Needs Attention).
-- **Picked from suggestions:** Old Harbour Bakery and Little Lighthouse
-  Park (both in the Old Harbour); Harbour Carousel (near the Imperial Fleet
-  Museum).
-- **Suggested, not picked:** Blefuscu Harbour boat tour (in the Old
-  Harbour; about 2 hours on the water, plus an hour each way to the
-  outer-harbour pier).
-- **Meals:**
-  - Day 3 lunch: Old Harbour Bakery (picked with the Old Harbour
-    suggestions).
-  - Day 3 dinner: Harbour Chowder House (also offered: Lighthouse Grill).
-  - Day 4 lunch: Lighthouse Grill (also offered: Harbour Chowder House).
-  - Day 4 dinner: none — you skipped this one (offered: Harbour Chowder
-    House, Lighthouse Grill).
+**Named by you:**
+- Old Harbour (neighborhood)
+- Imperial Fleet Museum (attraction)
+- Emperor's Palace (attraction — see Needs Attention)
+
+**Picked from suggestions:**
+- Old Harbour Bakery (in the Old Harbour)
+- Little Lighthouse Park (in the Old Harbour)
+- Harbour Carousel (near the Imperial Fleet Museum)
+
+**Suggested, not picked:**
+- Blefuscu Harbour boat tour (in the Old Harbour; about 2 hours on the water, plus an hour each way to the outer-harbour pier)
+
+**Meals:**
+- Day 3 lunch: Old Harbour Bakery (picked with the Old Harbour suggestions)
+- Day 3 dinner: Harbour Chowder House (also offered: Lighthouse Grill)
+- Day 4 lunch: Lighthouse Grill (also offered: Harbour Chowder House)
+- Day 4 dinner: none (you skipped this one; offered: Harbour Chowder House, Lighthouse Grill)
 
 ### Flights
 
