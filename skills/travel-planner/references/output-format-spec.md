@@ -173,6 +173,10 @@ In order:
    needed to be cut, the section may say so plainly ("Everything fit.") or be
    omitted entirely — omission means "nothing to report," not "didn't check."
    On a multi-city trip, start each item with its city ("Blefuscu: ...").
+   An item about a place from a places record leads with that place's name,
+   right after the city ("**Blefuscu: Emperor's Palace** (named by you)
+   isn't scheduled..."); the plan checker only counts an item for a place it
+   leads with.
    A rule break the plan checker reports but that can't be fixed (a booked
    06:00 flight inside the bedtime window, say) is listed here by its row
    title, which marks it as acknowledged.
@@ -244,6 +248,28 @@ city whose dates cover it; and every `planned` city has a places record. A
 day with no Lunch or Dinner row is a warning, not a failure. Exit code `0`
 means no unacknowledged errors, `1` means errors, `2` means the file couldn't
 be read.
+
+What the checker counts:
+
+- **A window's own row** has exactly the window's times and its title names
+  the window ("Nap / rest at hotel" for `nap`). Any other row inside the
+  window is an overlap.
+- **Times** are compared on the day's clock: a cell that names its own zone
+  is converted first, so `07:30 Europe/Paris` on a London day is 06:30.
+- **A row visits a place** when its title names the place in full, the way
+  the places record writes it (a leading "The" may be dropped). A mention
+  right after "to", "from", "near", or "toward" ("Travel to Mildendo Sea
+  Cliffs") is travel, not a visit, and a name that is only part of a longer
+  name in any places record ("Old Harbour" in "Lunch at Old Harbour
+  Bakery") doesn't count. A place noted `(neighborhood)` is also visited by
+  any row whose Location names it.
+- **Spelling** is compared loosely: case, accents, apostrophes, a
+  possessive "'s", and "&" versus "and" don't matter ("Thimble Cafe" names
+  "The Thimble Café").
+- **A Needs Attention item** covers a place only when it leads with the
+  place's name, after an optional "City:".
+- **A Meals restaurant** must be named in full in that day's Lunch or Dinner
+  row title.
 
 ## Time zones
 

@@ -135,6 +135,29 @@ class BlockingWindowTest(unittest.TestCase):
                         "| 19:30 | 07:00 | Bedtime | Hotel | Blocking window |", *MEALS_ROWS))
         self.assertEqual(messages(run(text), "error"), [])
 
+    def test_row_at_the_windows_times_but_not_named_for_it_fails(self):
+        text = plan(day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 13:00 | 15:00 | Royal Library | Library | |", *MEALS_ROWS))
+        errors = messages(run(text), "error")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("nap", errors[0])
+
+    def test_underscored_window_name_matches_its_own_row(self):
+        quiet = 'pacing_windows:\n  - name: "quiet_time"\n    start: "13:00"\n    end: "14:00"\n    blocking: true\n'
+        text = plan(day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 13:00 | 14:00 | Quiet time at the hotel | Hotel | |", *MEALS_ROWS), extra_frontmatter=quiet)
+        self.assertEqual(messages(run(text), "error"), [])
+
+    def test_cell_zone_is_read_on_the_days_clock(self):
+        westbound = plan(day("## Day 1 — 2026-11-10 (Tuesday)",
+                             "| 09:00 Europe/Paris | 08:15 | Flight in | Airport | Lands 08:15 London |", *MEALS_ROWS))
+        self.assertEqual(messages(run(westbound), "error"), [])
+        early = plan(day("## Day 1 — 2026-11-10 (Tuesday)",
+                         "| 07:30 Europe/Paris | 08:30 | Flight in | Airport | Leaves 06:30 London |", *MEALS_ROWS))
+        errors = messages(run(early), "error")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("bedtime", errors[0])
+
     def test_blank_end_counts_as_one_hour(self):
         inside = plan(day("## Day 1 — 2026-11-10 (Tuesday)",
                           "| 12:30 |  | Quick stop | Shop | |", *MEALS_ROWS))
@@ -164,10 +187,75 @@ class PlacesTest(unittest.TestCase):
                         "| 09:00 | 10:30 | Royal Library | Lilliput | |", *MEALS_ROWS))
         self.assertEqual(len(messages(run(text), "error")), 1)
 
-    def test_long_name_matches_on_most_words(self):
+    def test_long_name_needs_the_whole_name(self):
         text = plan(places("Lilliput", named=["Imperial Fleet Museum"]),
                     day("## Day 1 — 2026-11-10 (Tuesday)",
                         "| 09:00 | 10:30 | Fleet Museum | Imperial Quay | |", *MEALS_ROWS))
+        self.assertEqual(len(messages(run(text), "error")), 1)
+
+    def test_leading_article_and_accents_still_match(self):
+        text = plan(places("Lilliput", named=["The Thimble Café"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 09:00 | 10:30 | Coffee at Thimble Café | Main Square | |", *MEALS_ROWS))
+        self.assertEqual(messages(run(text), "error"), [])
+
+    def test_travel_row_to_a_place_is_not_a_visit(self):
+        text = plan(places("Lilliput", named=["Mildendo Sea Cliffs (attraction)"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 09:00 | 09:45 | Travel to the Mildendo Sea Cliffs | Hotel | |",
+                        "| 11:15 | 12:00 | Return from Mildendo Sea Cliffs | Mildendo Sea Cliffs | |", *MEALS_ROWS))
+        errors = messages(run(text), "error")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("Mildendo Sea Cliffs", errors[0])
+
+    def test_name_inside_a_longer_recorded_name_is_not_a_visit(self):
+        text = plan(places("Blefuscu", named=["Old Harbour (attraction)"], picked=["Old Harbour Bakery"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 09:00 | 10:00 | Old Harbour Bakery | Old Harbour, Blefuscu | |", *MEALS_ROWS))
+        errors = messages(run(text), "error")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("'Old Harbour'", errors[0])
+
+    def test_neighborhood_is_visited_by_a_row_located_in_it(self):
+        text = plan(places("Blefuscu", named=["Old Harbour (neighborhood)"], picked=["Little Lighthouse Park"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 09:00 | 10:00 | Little Lighthouse Park | Old Harbour, Blefuscu | |", *MEALS_ROWS))
+        self.assertEqual(messages(run(text), "error"), [])
+
+    def test_attraction_is_not_visited_by_a_row_located_at_it(self):
+        text = plan(places("Lilliput", named=["Royal Gardens (attraction)"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 09:00 | 10:00 | Coffee stop | Royal Gardens gate | |", *MEALS_ROWS))
+        self.assertEqual(len(messages(run(text), "error")), 1)
+
+    def test_possessive_still_names_the_place(self):
+        text = plan(places("Lilliput", picked=["Taverna Minor"], meals=["Day 1 lunch: Taverna Minor"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 12:00 | 12:45 | Lunch at Taverna Minor's terrace | Main Square | |",
+                        "| 17:30 | 18:30 | Dinner near the hotel | Main Square | |"))
+        self.assertEqual(messages(run(text), "error"), [])
+
+    def test_accents_and_ampersands_are_spelling_not_names(self):
+        text = plan(places("Lilliput", named=["The Thimble Café", "Main Square Deli & Bar"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 09:00 | 10:00 | Coffee at Thimble Cafe | Main Square | |",
+                        "| 10:30 | 11:00 | Main Square Deli and Bar | Main Square | |", *MEALS_ROWS))
+        self.assertEqual(messages(run(text), "error"), [])
+
+    def test_passing_mention_under_needs_attention_does_not_acknowledge(self):
+        text = plan(places("Lilliput", named=["Royal Gardens"], picked=["Taverna Minor"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 12:00 | 12:45 | Lunch at Taverna Minor | Main Square | |",
+                        "| 17:30 | 18:30 | Dinner near the hotel | Main Square | |"),
+                    needs_attention("Taverna Minor (by the Royal Gardens): step-free entrance unconfirmed."))
+        errors = messages(run(text), "error")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("Royal Gardens", errors[0])
+
+    def test_bold_city_prefixed_attention_item_acknowledges(self):
+        text = plan(places("Blefuscu", named=["Emperor's Palace"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)", *MEALS_ROWS),
+                    needs_attention("**Blefuscu: Emperor's Palace** (named by you) is open only Mondays."))
         self.assertEqual(messages(run(text), "error"), [])
 
     def test_place_listed_under_needs_attention_passes(self):
@@ -212,6 +300,15 @@ class MealsTest(unittest.TestCase):
                         "| 17:30 | 18:30 | Dinner near the hotel | Main Square | |"))
         self.assertEqual(messages(run(text), "error"), [])
 
+    def test_restaurant_sharing_most_words_with_the_row_fails(self):
+        text = plan(places("Lilliput", meals=["Day 1 dinner: Harbour Chowder House"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 12:00 | 12:45 | Lunch near the hotel | Main Square | |",
+                        "| 17:30 | 18:30 | Dinner at Harbour Fish House | Old Harbour | |"))
+        errors = messages(run(text), "error")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("Harbour Chowder House", errors[0])
+
     def test_skipped_meal_is_ignored(self):
         text = plan(places("Lilliput", meals=["Day 1 dinner: none (you skipped this one)"]),
                     day("## Day 1 — 2026-11-10 (Tuesday)", *MEALS_ROWS))
@@ -235,6 +332,13 @@ class CitiesTest(unittest.TestCase):
         text = plan(places("Lilliput"), places("Blefuscu"),
                     day("## Day 1 — 2026-11-10 (Tuesday) — Lilliput", *MEALS_ROWS),
                     day("## Day 2 — 2026-11-11 (Wednesday) — Blefuscu · Europe/Paris", *MEALS_ROWS),
+                    extra_frontmatter=NAP_AND_BEDTIME + TWO_CITIES)
+        self.assertEqual(messages(run(text), "error"), [])
+
+    def test_city_names_compare_without_case(self):
+        text = plan(places("lilliput"), places("Blefuscu"),
+                    day("## Day 1 — 2026-11-10 (Tuesday) — lilliput", *MEALS_ROWS),
+                    day("## Day 2 — 2026-11-11 (Wednesday) — BLEFUSCU · Europe/Paris", *MEALS_ROWS),
                     extra_frontmatter=NAP_AND_BEDTIME + TWO_CITIES)
         self.assertEqual(messages(run(text), "error"), [])
 
@@ -307,6 +411,33 @@ class MultiCityEdgeTest(unittest.TestCase):
                     day("## Day 1 — 2026-11-10 (Tuesday)", *MEALS_ROWS),
                     needs_attention("Harbour Chowder House is closed for a private event that night."))
         self.assertEqual(messages(run(text), "error"), [])
+
+
+class FrontmatterListTest(unittest.TestCase):
+    def test_quoted_value_with_a_comment_drops_quotes_and_comment(self):
+        items = check_plan.frontmatter_list('w:\n  - name: "bed"   # night\n    end: "07:00"   # next morning\n', "w")
+        self.assertEqual(items, [{"name": "bed", "end": "07:00"}])
+
+    def test_list_indented_four_spaces_is_read(self):
+        items = check_plan.frontmatter_list('w:\n    - name: "nap"\n      start: "13:00"\n', "w")
+        self.assertEqual(items, [{"name": "nap", "start": "13:00"}])
+
+    def test_unindented_list_is_read(self):
+        items = check_plan.frontmatter_list('w:\n- name: "nap"\n  start: "13:00"\nother: 1\n', "w")
+        self.assertEqual(items, [{"name": "nap", "start": "13:00"}])
+
+    def test_one_level_of_nesting_is_kept(self):
+        items = check_plan.frontmatter_list('c:\n  - name: "L"\n    lodging:\n      name: "Inn"\n    status: planned\n', "c")
+        self.assertEqual(items, [{"name": "L", "lodging": {"name": "Inn"}, "status": "planned"}])
+
+    def test_commented_window_time_still_blocks(self):
+        windows = NAP_AND_BEDTIME.replace('end: "07:00"', 'end: "07:00"   # next morning')
+        text = plan(day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 12:00 | 12:45 | Lunch near the hotel | Main Square | |",
+                        "| 18:30 | 20:30 | Dinner late | Main Square | |"), extra_frontmatter=windows)
+        errors = messages(run(text), "error")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("bedtime", errors[0])
 
 
 class FormatAndCliTest(unittest.TestCase):
