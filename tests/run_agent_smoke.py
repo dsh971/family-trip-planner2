@@ -19,6 +19,7 @@ otherwise.
 import argparse
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -46,18 +47,38 @@ class Result:
     workspace: str = ""
 
 
+def workspace_roots(workspace: str) -> list[str]:
+    """The workspace path as given and as resolved (/var vs /private/var)."""
+    return list(dict.fromkeys([workspace, os.path.realpath(workspace)]))
+
+
 def claude_allowed_tools(workspace: str) -> list[str]:
     """Read/write files, web search and fetch, and python3 only for the
-    skill's own scripts — never a general shell."""
+    skill's own scripts — never a general shell. The scripts can't be
+    rewritten first: claude_disallowed_tools blocks edits to the copied
+    skill, and prepare_workspace makes it read-only."""
     tools = ["Skill", "Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "WebFetch"]
     for script in ("check_plan.py", "md_to_ics.py"):
-        for base in (".claude/skills/travel-planner/scripts", os.path.join(workspace, ".claude/skills/travel-planner/scripts")):
+        bases = [".claude/skills/travel-planner/scripts"]
+        bases += [os.path.join(root, ".claude/skills/travel-planner/scripts") for root in workspace_roots(workspace)]
+        for base in bases:
             tools.append(f"Bash(python3 {base}/{script}:*)")
     return tools
 
 
+def claude_disallowed_tools(workspace: str) -> list[str]:
+    denied = []
+    for rel in SKILL_INSTALL_DIRS:
+        targets = [rel] + [os.path.join(root, rel) for root in workspace_roots(workspace)]
+        for target in targets:
+            for tool in ("Write", "Edit"):
+                denied.append(f"{tool}({target}/**)")
+    return denied
+
+
 def build_claude_command(binary: str, workspace: str, prompt: str) -> list[str]:
-    return [binary, "-p", prompt, "--allowedTools", *claude_allowed_tools(workspace)]
+    return [binary, "-p", prompt, "--allowedTools", *claude_allowed_tools(workspace),
+            "--disallowedTools", *claude_disallowed_tools(workspace)]
 
 
 def build_cursor_command(binary: str, workspace: str, prompt: str, allow_force: bool = False) -> list[str]:
@@ -74,11 +95,30 @@ AGENTS = {
 }
 
 
+def _set_tree_writable(root: str, writable: bool) -> None:
+    for dirpath, _dirnames, filenames in os.walk(root):
+        for path in [dirpath] + [os.path.join(dirpath, f) for f in filenames]:
+            mode = os.stat(path).st_mode
+            os.chmod(path, mode | stat.S_IWUSR if writable else mode & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH))
+
+
 def prepare_workspace(agent: str) -> str:
+    """A throwaway workspace with a read-only copy of the skill in each
+    agent's skill folder, so an agent can run the scripts but not rewrite them."""
     workspace = tempfile.mkdtemp(prefix=f"travel-planner-{agent}-")
     for rel in SKILL_INSTALL_DIRS:
-        shutil.copytree(SKILL_DIR, os.path.join(workspace, rel, "travel-planner"))
+        copy = os.path.join(workspace, rel, "travel-planner")
+        shutil.copytree(SKILL_DIR, copy)
+        _set_tree_writable(copy, False)
     return workspace
+
+
+def remove_workspace(workspace: str) -> None:
+    for rel in SKILL_INSTALL_DIRS:
+        copy = os.path.join(workspace, rel, "travel-planner")
+        if os.path.isdir(copy):
+            _set_tree_writable(copy, True)
+    shutil.rmtree(workspace, ignore_errors=True)
 
 
 def evaluate_plan(path: str) -> list[str]:
@@ -130,7 +170,7 @@ def run_agent(agent: str, binary: str | None, prompt: str, timeout: int, allow_c
     failures = evaluate_plan(os.path.join(workspace, PLAN_NAME))
     if failures:
         return Result(agent, "fail", "; ".join(failures), workspace)
-    shutil.rmtree(workspace, ignore_errors=True)
+    remove_workspace(workspace)
     return Result(agent, "pass", "plan passed the checker and structural checks")
 
 

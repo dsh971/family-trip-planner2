@@ -74,7 +74,7 @@ class RunAgentTest(unittest.TestCase):
     def tearDown(self):
         for result in getattr(self, "results", []):
             if result.workspace:
-                shutil.rmtree(result.workspace, ignore_errors=True)
+                run_agent_smoke.remove_workspace(result.workspace)
 
     def run_one(self, agent, runner, binary="/usr/bin/fake", allow_force=False):
         result = run_agent_smoke.run_agent(agent, binary, "prompt", 60, allow_force, runner=runner)
@@ -115,6 +115,22 @@ class RunAgentTest(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("meal_help", result.detail)
 
+    def test_copied_skill_scripts_are_read_only(self):
+        result = self.run_one("cursor", FakeRunner(plan_text=None))
+        for rel in run_agent_smoke.SKILL_INSTALL_DIRS:
+            script = os.path.join(result.workspace, rel, "travel-planner", "scripts", "check_plan.py")
+            self.assertFalse(os.access(script, os.W_OK), script)
+
+    def test_unsupported_installed_agent_is_skipped(self):
+        result = self.run_one("codex", FakeRunner())
+        self.assertEqual(result.status, "skipped")
+        self.assertIn("no command", result.detail)
+
+    def test_agent_exiting_non_zero_fails(self):
+        result = self.run_one("claude-code", FakeRunner(GOOD_PLAN, returncode=2))
+        self.assertEqual(result.status, "fail")
+        self.assertIn("exited 2", result.detail)
+
     def test_skill_is_copied_into_both_agent_folders(self):
         runner = FakeRunner(plan_text=None)
         result = self.run_one("cursor", runner)
@@ -133,6 +149,14 @@ class CommandTest(unittest.TestCase):
             self.assertRegex(rule, r"^Bash\(python3 \S+/scripts/(check_plan|md_to_ics)\.py:\*\)$")
         self.assertNotIn("Bash", command)
         self.assertNotIn("Bash(*)", command)
+
+    def test_claude_command_blocks_writes_to_the_copied_skill(self):
+        command = run_agent_smoke.build_claude_command("claude", "/tmp/ws", "prompt")
+        self.assertIn("--disallowedTools", command)
+        denied = command[command.index("--disallowedTools") + 1:]
+        for rel in run_agent_smoke.SKILL_INSTALL_DIRS:
+            for tool in ("Write", "Edit"):
+                self.assertTrue(any(d.startswith(f"{tool}(") and rel in d for d in denied), (tool, rel, denied))
 
     def test_cursor_force_only_when_opted_in(self):
         self.assertNotIn("--force", run_agent_smoke.build_cursor_command("cursor-agent", "/tmp/ws", "p"))

@@ -248,6 +248,67 @@ class CitiesTest(unittest.TestCase):
         self.assertTrue(any("Lilliput" in e and "no day" in e for e in errors), errors)
 
 
+RETURN_TRIP = """cities:
+  - name: "Lilliput"
+    start_date: 2026-11-10
+    end_date: 2026-11-10
+    status: planned
+  - name: "Blefuscu"
+    start_date: 2026-11-11
+    end_date: 2026-11-11
+    timezone: "Europe/Paris"
+    status: planned
+  - name: "Lilliput"
+    start_date: 2026-11-12
+    end_date: 2026-11-12
+    status: planned
+"""
+
+
+class MultiCityEdgeTest(unittest.TestCase):
+    def test_return_visit_to_an_earlier_city_passes(self):
+        text = plan(places("Lilliput", named=["Royal Gardens"]), places("Blefuscu"),
+                    places("Lilliput", named=["Sea Cliffs"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday) — Lilliput",
+                        "| 09:00 | 10:00 | Royal Gardens | Lilliput | |", *MEALS_ROWS),
+                    day("## Day 2 — 2026-11-11 (Wednesday) — Blefuscu · Europe/Paris", *MEALS_ROWS),
+                    day("## Day 3 — 2026-11-12 (Thursday) — Lilliput",
+                        "| 09:00 | 10:00 | Sea Cliffs | Lilliput | |", *MEALS_ROWS),
+                    extra_frontmatter=NAP_AND_BEDTIME + RETURN_TRIP)
+        self.assertEqual(messages(run(text), "error"), [])
+
+    def test_repeated_places_records_for_one_city_are_both_checked(self):
+        text = plan(places("Lilliput", named=["Royal Gardens"]), places("Lilliput", named=["Sea Cliffs"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)",
+                        "| 09:00 | 10:00 | Royal Gardens | Lilliput | |", *MEALS_ROWS))
+        errors = messages(run(text), "error")
+        self.assertEqual(len(errors), 1, errors)
+        self.assertIn("Sea Cliffs", errors[0])
+
+    def test_heading_naming_a_city_not_in_the_list_fails(self):
+        text = plan(places("Lilliput"), places("Blefuscu"),
+                    day("## Day 1 — 2026-11-10 (Tuesday) — Mildendo", *MEALS_ROWS),
+                    day("## Day 2 — 2026-11-11 (Wednesday) — Blefuscu · Europe/Paris", *MEALS_ROWS),
+                    extra_frontmatter=NAP_AND_BEDTIME + TWO_CITIES)
+        errors = messages(run(text), "error")
+        self.assertTrue(any("isn't in `cities`" in e for e in errors), errors)
+
+    def test_city_with_invalid_dates_fails(self):
+        broken = TWO_CITIES.replace("end_date: 2026-11-11", "end_date: not-a-date")
+        text = plan(places("Lilliput"), places("Blefuscu"),
+                    day("## Day 1 — 2026-11-10 (Tuesday) — Lilliput", *MEALS_ROWS),
+                    day("## Day 2 — 2026-11-11 (Wednesday) — Blefuscu · Europe/Paris", *MEALS_ROWS),
+                    extra_frontmatter=NAP_AND_BEDTIME + broken)
+        errors = messages(run(text), "error")
+        self.assertTrue(any("no valid start_date" in e for e in errors), errors)
+
+    def test_meals_restaurant_named_under_needs_attention_passes(self):
+        text = plan(places("Lilliput", meals=["Day 1 dinner: Harbour Chowder House"]),
+                    day("## Day 1 — 2026-11-10 (Tuesday)", *MEALS_ROWS),
+                    needs_attention("Harbour Chowder House is closed for a private event that night."))
+        self.assertEqual(messages(run(text), "error"), [])
+
+
 class FormatAndCliTest(unittest.TestCase):
     def test_malformed_day_table_fails_with_the_converter_message(self):
         text = plan("## Day 1 — 2026-11-10 (Tuesday)\n\n| Start | Title |\n|---|---|\n| 09:00 | X |\n")

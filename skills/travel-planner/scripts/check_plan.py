@@ -147,7 +147,7 @@ def places_records(text: str) -> dict[str, dict[str, list[str]]]:
         heading = PLACES_HEADING_RE.match(line)
         if heading:
             city = heading.group(1).strip()
-            records[city] = {}
+            records.setdefault(city, {})
             group = None
             continue
         if line.startswith("#"):
@@ -294,7 +294,9 @@ def check(text: str) -> list[Finding]:
                     if restaurant.lower().startswith("none"):
                         continue
                     meal_rows = [r for r in rows_by_number.get(number, []) if is_meal_row(r, meal)]
-                    if not any(name_matches(restaurant, f"{r[2]} {r[3]}") for r in meal_rows):
+                    if not any(name_matches(restaurant, f"{r[2]} {r[3]}") for r in meal_rows) and not any(
+                        name_matches(restaurant, a) for a in attention_items
+                    ):
                         report(f"{city}: places",
                                f"Meals says Day {number} {meal} is '{restaurant}', but no {meal.title()} row on Day {number} names it")
 
@@ -306,14 +308,17 @@ def check(text: str) -> list[Finding]:
     # Cities.
     cities = frontmatter_list(frontmatter, "cities")
     if len(cities) > 1:
-        names = {c.get("name", ""): c for c in cities}
+        # A return to an earlier city is a separate entry with the same name.
+        entries_by_name: dict[str, list[dict]] = {}
+        for c in cities:
+            entries_by_name.setdefault(c.get("name", ""), []).append(c)
         for _number, date_str, city in headings:
-            entry = names.get(city)
-            if entry is None:
+            entries = entries_by_name.get(city)
+            if not entries:
                 report(f"Day {date_str}", f"heading for {date_str} names city '{city}', which isn't in `cities`")
-            elif not entry.get("start_date", "") <= date_str <= entry.get("end_date", ""):
-                report(f"Day {date_str}", f"heading for {date_str} names {city}, whose dates are "
-                                          f"{entry.get('start_date')} to {entry.get('end_date')}")
+            elif not any(e.get("start_date", "") <= date_str <= e.get("end_date", "") for e in entries):
+                ranges = ", ".join(f"{e.get('start_date')} to {e.get('end_date')}" for e in entries)
+                report(f"Day {date_str}", f"heading for {date_str} names {city}, whose dates are {ranges}")
         named = {(date_str, city) for _number, date_str, city in headings}
         for c in cities:
             try:
