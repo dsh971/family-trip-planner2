@@ -55,17 +55,18 @@ def main() -> int:
             print(result.stderr[-2000:], file=sys.stderr)
             return 1
         failures = []
-        for agent, rel in AGENT_DIRS.items():
+        for rel in dict.fromkeys(AGENT_DIRS.values()):
+            agents = ", ".join(a for a, r in AGENT_DIRS.items() if r == rel)
             installed = os.path.join(home, rel, "travel-planner")
             missing = [f for f in REQUIRED_FILES if not os.path.isfile(os.path.join(installed, f))]
             if missing:
-                failures.append(f"{agent}: missing {', '.join(missing)} in {installed}")
+                failures.append(f"{agents}: missing {', '.join(missing)} in {installed}")
                 continue
             problems = check_package(installed)
             if problems:
-                failures.append(f"{agent}: " + "; ".join(problems))
+                failures.append(f"{agents}: " + "; ".join(problems))
             else:
-                print(f"PASS {agent}: {installed}")
+                print(f"PASS {agents}: {installed}")
         for failure in failures:
             print(f"FAIL {failure}")
         return 1 if failures else 0

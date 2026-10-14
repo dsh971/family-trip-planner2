@@ -26,6 +26,7 @@ import re
 import sys
 from dataclasses import dataclass
 from datetime import date, timedelta
+from typing import NamedTuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -40,6 +41,15 @@ WORD_RE = re.compile(r"[a-z0-9']+")
 STOPWORDS = {"the", "a", "an", "of", "at", "in", "on", "and", "to", "for", "by", "near"}
 CHECKED_GROUPS = {"named by you", "picked from suggestions", "chosen for you"}
 DAY_MINUTES = 24 * 60
+
+
+class BlockingWindow(NamedTuple):
+    name: str
+    start_cell: str
+    end_cell: str
+    start: int
+    end: int
+    spans: list[tuple[int, int]]
 
 
 @dataclass
@@ -112,9 +122,10 @@ def section_text(text: str, heading: str) -> str:
     return rest[: end.start()] if end else rest
 
 
-def heading_cities(text: str) -> list[tuple[str, str]]:
-    """(date, city) for each day heading, in order. The city is the text after
-    the weekday and before any ' · <zone>' suffix; empty when not named."""
+def heading_cities(text: str) -> list[tuple[str, str, str]]:
+    """(day number, date, city) for each day heading, in order. The city is
+    the text after the weekday and before any ' · <zone>' suffix; empty when
+    not named."""
     out = []
     for line in text.splitlines():
         match = DAY_HEADING_RE.match(line)
@@ -123,7 +134,7 @@ def heading_cities(text: str) -> list[tuple[str, str]]:
         rest = match.group(3).split("·", 1)[0]
         rest = re.sub(r"^\s*\([^)]*\)", "", rest)
         city = rest.strip().lstrip("—–-").strip()
-        out.append((match.group(2), city))
+        out.append((match.group(1), match.group(2), city))
     return out
 
 
@@ -201,6 +212,11 @@ def row_interval(start_cell: str, end_cell: str) -> tuple[int, int] | None:
     return start, end
 
 
+def is_meal_row(row: list[str], meal: str) -> bool:
+    """Meal rows are titled starting "Lunch" or "Dinner" (the spec's convention)."""
+    return row[2].lower().startswith(meal.lower())
+
+
 def window_intervals(start: int, end: int) -> list[tuple[int, int]]:
     """A window's span on one day's clock; an overnight window covers the
     early morning (from the night before) and the late evening."""
@@ -214,14 +230,18 @@ def window_intervals(start: int, end: int) -> list[tuple[int, int]]:
 def check(text: str) -> list[Finding]:
     findings: list[Finding] = []
     try:
+        frontmatter = md_to_ics.read_frontmatter(text)
         tz_name = md_to_ics.extract_timezone(text)
-        trip_name = md_to_ics.frontmatter_value(md_to_ics.read_frontmatter(text), "trip_name") or ""
+        trip_name = md_to_ics.frontmatter_value(frontmatter, "trip_name") or ""
         days = md_to_ics.parse_days(text)
         md_to_ics.build_events(days, tz_name, trip_name)
     except md_to_ics.TripPlanError as exc:
         return [Finding("error", "format", str(exc))]
 
-    frontmatter = md_to_ics.read_frontmatter(text)
+    # The converter rejects any "## Day" line it can't parse, so these headings
+    # line up one-to-one with `days`.
+    headings = heading_cities(text)
+    rows_by_number = {number: d["rows"] for (number, _date, _city), d in zip(headings, days)}
     attention = section_text(text, "Needs Attention")
     attention_items = [line[2:] for line in attention.splitlines() if line.startswith("- ")]
 
@@ -238,17 +258,19 @@ def check(text: str) -> list[Finding]:
         start, end = minutes(window.get("start", "")), minutes(window.get("end", ""))
         if start is None or end is None:
             continue
-        windows.append((window.get("name", "blocking window"), window["start"], window["end"], start, end))
+        windows.append(BlockingWindow(window.get("name", "blocking window"), window["start"], window["end"],
+                                      start, end, window_intervals(start, end)))
     for d in days:
         for start_cell, end_cell, title, _location, _notes in d["rows"]:
             interval = row_interval(start_cell, end_cell)
             if interval is None:
                 continue
-            for name, w_start, w_end, ws, we in windows:
-                if minutes(start_cell) == ws and minutes(end_cell) == we:
-                    continue  # the window's own row
-                if any(interval[0] < b and a < interval[1] for a, b in window_intervals(ws, we)):
-                    report(d["label"], f"row '{title}' overlaps the {name} window {w_start}–{w_end}", title)
+            row_bounds = (minutes(start_cell), minutes(end_cell))
+            for w in windows:
+                if row_bounds == (w.start, w.end):
+                    continue
+                if any(interval[0] < b and a < interval[1] for a, b in w.spans):
+                    report(d["label"], f"row '{title}' overlaps the {w.name} window {w.start_cell}–{w.end_cell}", title)
 
     # Places and meals.
     all_rows = [row for d in days for row in d["rows"]]
@@ -271,31 +293,28 @@ def check(text: str) -> list[Finding]:
                     number, meal, restaurant = match.group(1), match.group(2).lower(), strip_note(match.group(3))
                     if restaurant.lower().startswith("none"):
                         continue
-                    day_rows = next((d["rows"] for d in days if d["label"].startswith(f"Day {number} ")), [])
-                    meal_rows = [r for r in day_rows if r[2].lower().startswith(meal)]
+                    meal_rows = [r for r in rows_by_number.get(number, []) if is_meal_row(r, meal)]
                     if not any(name_matches(restaurant, f"{r[2]} {r[3]}") for r in meal_rows):
                         report(f"{city}: places",
                                f"Meals says Day {number} {meal} is '{restaurant}', but no {meal.title()} row on Day {number} names it")
 
     for d in days:
-        titles = [row[2].lower() for row in d["rows"]]
         for meal in ("Lunch", "Dinner"):
-            if not any(t.startswith(meal.lower()) for t in titles):
+            if not any(is_meal_row(row, meal) for row in d["rows"]):
                 findings.append(Finding("warning", d["label"], f"no {meal} row"))
 
     # Cities.
     cities = frontmatter_list(frontmatter, "cities")
-    headings = heading_cities(text)
     if len(cities) > 1:
         names = {c.get("name", ""): c for c in cities}
-        for date_str, city in headings:
+        for _number, date_str, city in headings:
             entry = names.get(city)
             if entry is None:
                 report(f"Day {date_str}", f"heading for {date_str} names city '{city}', which isn't in `cities`")
             elif not entry.get("start_date", "") <= date_str <= entry.get("end_date", ""):
                 report(f"Day {date_str}", f"heading for {date_str} names {city}, whose dates are "
                                           f"{entry.get('start_date')} to {entry.get('end_date')}")
-        named = {(d, c) for d, c in headings}
+        named = {(date_str, city) for _number, date_str, city in headings}
         for c in cities:
             try:
                 first = date.fromisoformat(c.get("start_date", ""))

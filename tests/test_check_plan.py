@@ -16,9 +16,10 @@ sys.path.insert(0, os.path.join(REPO, "skills", "travel-planner", "scripts"))
 
 import check_plan  # noqa: E402
 
-SAMPLE = os.path.join(REPO, "examples", "trip-plans", "sample-trip-lilliput.md")
+sys.path.insert(0, HERE)
+from test_md_to_ics import day  # noqa: E402
 
-HEADER = "| Start | End | Title | Location | Notes |\n|---|---|---|---|---|\n"
+SAMPLE = os.path.join(REPO, "examples", "trip-plans", "sample-trip-lilliput.md")
 
 NAP_AND_BEDTIME = """pacing_windows:
   - name: "nap"
@@ -61,10 +62,6 @@ def plan(*sections: str, extra_frontmatter: str = NAP_AND_BEDTIME) -> str:
         + "---\n\n# T\n\n"
         + "\n".join(sections)
     )
-
-
-def day(heading: str, *rows: str) -> str:
-    return f"{heading}\n\n{HEADER}" + "".join(r + "\n" for r in rows)
 
 
 MEALS_ROWS = (

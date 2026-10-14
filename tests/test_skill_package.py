@@ -149,7 +149,8 @@ class BrokenCopyTest(unittest.TestCase):
         self.assertProblem("invalid name")
 
     def test_overlong_description_fails(self):
-        fields = read_frontmatter(open(os.path.join(self.copy, "SKILL.md"), encoding="utf-8").read())
+        with open(os.path.join(self.copy, "SKILL.md"), encoding="utf-8") as f:
+            fields = read_frontmatter(f.read())
         self.edit("SKILL.md", fields["description"], "x" * (MAX_DESCRIPTION + 1))
         self.assertProblem("description must be")
 

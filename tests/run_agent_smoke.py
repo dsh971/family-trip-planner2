@@ -110,13 +110,14 @@ def run_agent(agent: str, binary: str | None, prompt: str, timeout: int, allow_c
               runner=subprocess.run) -> Result:
     if binary is None:
         return Result(agent, "skipped", f"{AGENTS[agent]} is not installed")
-    if agent == "codex":
-        return Result(agent, "skipped", "codex is installed but this runner has no Codex command yet")
+    builders = {
+        "claude-code": lambda ws: build_claude_command(binary, ws, prompt),
+        "cursor": lambda ws: build_cursor_command(binary, ws, prompt, allow_cursor_force),
+    }
+    if agent not in builders:
+        return Result(agent, "skipped", f"{AGENTS[agent]} is installed but this runner has no command for it yet")
     workspace = prepare_workspace(agent)
-    if agent == "claude-code":
-        command = build_claude_command(binary, workspace, prompt)
-    else:
-        command = build_cursor_command(binary, workspace, prompt, allow_cursor_force)
+    command = builders[agent](workspace)
     try:
         completed = runner(command, cwd=workspace, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired:
