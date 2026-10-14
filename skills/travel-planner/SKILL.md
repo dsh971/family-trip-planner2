@@ -31,11 +31,13 @@ read the rest in.
 
 1. **Trip outline intake.** Follow `references/intake-questions.md`. Ask the
    "always ask" questions together, in one turn, and wait for the answers
-   before researching. Ask the flight questions only if the traveler wants
-   flight search. Use `AskUserQuestion` for questions with a few fixed
-   answers (naps on the go, help with where to eat, nonstop-only, budget
-   level); keep cities, dates,
-   and addresses as free text.
+   before researching — but if the traveler already gave some answers, ask
+   only for what's missing, and if they said "pick for me" or "don't ask",
+   ask nothing and use the defaults that doc describes. Ask the flight
+   questions only if the traveler wants flight search. Offer fixed choices
+   for questions with a few likely answers (naps on the go, help with where
+   to eat, nonstop-only, budget level) — see "Asking questions" below; keep
+   cities, dates, and addresses as free text.
 
 2. **Write the outline.** Right after intake, write the plan file per
    `references/output-format-spec.md` and "Right after intake" in
@@ -54,7 +56,19 @@ read the rest in.
    — its discovery commands need a Google Places key (see that doc).
    Schedule per `references/itinerary-and-pacing.md`,
    write short descriptions per `references/preview-content-rules.md`, and save
-   the city before starting the next one.
+   the city before starting the next one. If the traveler asked you to pick
+   for them, use the planning loop's pick-for-me defaults instead of asking.
+
+   **Check before every save.** Before saving each city, and before handing
+   over the finished plan, run:
+   ```
+   python3 <this skill's base directory>/scripts/check_plan.py <trip-plan.md>
+   ```
+   Fix every ERROR line and run it again. An error you can't fix (a booked
+   flight inside the bedtime window, say) goes under "Needs Attention" by its
+   row title, which the checker then reports as acknowledged. WARNING lines
+   don't block saving. If you can't run commands, apply the same rules by
+   reading `references/output-format-spec.md`'s "Checking a plan".
 
 4. **Flights, if requested.** Follow
    `integrations/flight-search-integration.md` — check for
@@ -64,7 +78,9 @@ read the rest in.
    `integrations/reservation-integration.md` — check for
    `table-reservation-goat-pp-cli`, search freely, but always confirm the
    specific restaurant, date, time, and party size with the traveler and
-   wait for their answer before booking or canceling anything.
+   wait for their answer before booking or canceling anything. In
+   pick-for-me mode, never book: list bookable restaurants under "Open
+   Questions for the Traveler" instead.
 
 6. **Offer the calendar export.** Once every city is planned (or whenever
    the traveler asks — a half-planned file converts too), offer to run:
@@ -76,30 +92,35 @@ read the rest in.
    than asking the traveler to debug it). Deviating from the day-table shape
    or heading pattern in `references/output-format-spec.md` breaks this step.
 
-## Pick lists in the terminal
+## Asking questions
 
-Step 3 of the planning loop has the traveler pick from suggestions. Use
-`AskUserQuestion` with `multiSelect: true`:
+If your platform gives you a structured question tool — one that shows the
+traveler choices to tick and waits for the answer — use it for fixed-choice
+questions and pick lists. (In Claude Code that's `AskUserQuestion`; other
+agents name theirs differently.) If it doesn't, write the choices as a
+numbered list and ask the traveler to reply with numbers or their own
+answer. Either way, wait for the answer before going on.
 
-- One question per must-visit place, naming it in the question text and in
-  the header (the header is a short label, 12 characters at most); a city
-  with no must-visit places gets questions grouped by area or theme instead.
-- Each question takes 2–4 options. Split a longer list across several
-  questions for the same place ("Near Sagrada Família (1 of 2)"), and send
-  at most 4 questions per call, then the next call.
-- A single suggestion is a two-option question: "Add it" / "Skip".
-- Put the one-line reason and rough time in each option's description.
-- The built-in "Other" answer is how the traveler adds a place of their
-  own — treat it as a new must-visit place (planning loop, step 3).
-- If a must-visit place has no suggestions, say so in text and ask whether
-  they want to add places there; don't send an empty question.
+Pick lists come up twice in the planning loop:
 
-Step 7 (places to eat, when the traveler wants help with every meal) uses
-the same tool, single-select this time: one question per meal, its header
-naming the meal ("D1 lunch", "D2 dinner"), the two or three restaurants as
-options with the one-line reason and price level in each description, and
-"Skip" as the last option. "Other" lets the traveler type in a restaurant
-of their own. Up to 4 meals per call.
+- **Suggestions (step 3)** — the traveler may choose several. Ask one
+  question per must-visit place, naming it; a city with no must-visit places
+  gets questions grouped by area or theme instead. Put each suggestion's
+  one-line reason and rough time next to it. A single suggestion is a yes/no
+  question. Always leave room for the traveler to add a place of their own,
+  and treat one they add as a new must-visit place. If a must-visit place has
+  no suggestions, say so and ask whether they want to add places there —
+  never show an empty list.
+- **Places to eat (step 7, when the traveler wants help with every meal)** —
+  one choice per meal: name the meal ("Day 1 lunch"), list the two or three
+  restaurants with their one-line reason and price level, and offer "Skip".
+  Let the traveler type in a restaurant of their own.
+
+If your question tool limits how many options or questions fit at once, or
+how long a label can be, split long lists across several questions ("Near
+Sagrada Família (1 of 2)") rather than dropping options. Claude Code's tool,
+for example, takes 2–4 options per question, up to 4 questions per call, and
+headers of at most 12 characters.
 
 ## Rules for the external CLIs
 

@@ -15,6 +15,13 @@ on the go, help with where to eat, nonstop-only or not, budget level), offer tho
 choices the traveler can pick from. Keep open answers — cities, dates,
 addresses, place names — as free text.
 
+If the traveler already gave some answers — in their first message, or in
+a written brief — don't ask those again; ask only for what's missing. If they
+said "pick for me", "don't ask", or otherwise asked for a plan without
+questions, ask nothing: use the defaults below and record each one, and
+plan every city with the planning loop's pick-for-me defaults
+(`city-planning-loop.md`).
+
 Must-visit places are **not** asked here. They're asked city by city once
 the outline is set (see `city-planning-loop.md`), so each city's list stays
 short and specific.
@@ -94,7 +101,9 @@ question, proceed with a clearly-stated, reasonable default (e.g. "assuming
 no nap window since none was mentioned") and record it under "Open Questions
 for the Traveler" in the output rather than re-asking — matching the
 research methodology's own "never silently drop, never silently assume
-without saying so" discipline.
+without saying so" discipline. The same goes for every question skipped in
+pick-for-me mode; for help with where to eat, the default there is
+"just the standouts".
 
 ## Right after intake: write the outline
 
