@@ -189,6 +189,14 @@ class RunAgentTest(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("boom", result.detail)
 
+    def test_failed_exit_reports_the_agents_last_words(self):
+        class LoggedOut(FakeRunner):
+            def __call__(self, command, cwd, **kwargs):
+                return subprocess.CompletedProcess(command, 1, "", "Error: Authentication required.\n")
+        result = self.run_one("cursor", LoggedOut())
+        self.assertEqual(result.status, "fail")
+        self.assertIn("exited 1: Error: Authentication required.", result.detail)
+
     def test_cursor_run_is_judged_on_the_plan_alone(self):
         result = self.run_one("cursor", FakeRunner(GOOD_PLAN, stdout="plain text"))
         self.assertEqual(result.status, "pass", result.detail)
@@ -222,8 +230,10 @@ class CommandTest(unittest.TestCase):
         allowed = command[command.index("--allowedTools") + 1:command.index("--disallowedTools")]
         for open_ended in ("Read", "Write", "Edit", "Glob", "Grep"):
             self.assertNotIn(open_ended, allowed)
-        self.assertIn("Write(trip-plan.md)", allowed)
-        self.assertEqual(command[command.index("--permission-mode") + 1], "dontAsk")
+        self.assertFalse([rule for rule in command if rule.startswith("Write(")],
+                         "Claude Code never consults Write(path) rules; Edit(path) covers writes")
+        self.assertEqual(command[command.index("--permission-mode") + 1], "acceptEdits")
+        self.assertEqual(command[command.index("--permission-prompts") + 1], "none")
         tools = command[command.index("--tools") + 1].split(",")
         for tool in ("Skill", "Bash", "WebFetch"):
             self.assertIn(tool, tools)
@@ -247,8 +257,7 @@ class CommandTest(unittest.TestCase):
         self.assertIn("--disallowedTools", command)
         denied = command[command.index("--disallowedTools") + 1:]
         for rel in run_agent_smoke.SKILL_INSTALL_DIRS:
-            for tool in ("Write", "Edit"):
-                self.assertTrue(any(d.startswith(f"{tool}(") and rel in d for d in denied), (tool, rel, denied))
+            self.assertIn(f"Edit({rel}/**)", denied)
 
     def test_cursor_force_only_when_opted_in(self):
         self.assertNotIn("--force", run_agent_smoke.build_cursor_command("cursor-agent", "/tmp/ws", "p"))

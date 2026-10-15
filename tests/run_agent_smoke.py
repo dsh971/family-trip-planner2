@@ -9,9 +9,10 @@ This spends the owner's Claude and Cursor subscriptions and reads live web
 pages, so it is never part of CI or unit-test discovery. Each agent runs in
 its own throwaway workspace with the skill copied in; the owner's logins
 are NOT isolated. Claude Code loads only the workspace's own settings and
-skills (not the owner's settings, plugins, or MCP servers) and denies anything
-not allowlisted: web search and fetch, writing the plan file, and the skill's
-two scripts on that file. Restricted mode would be tighter, but it hides
+skills (not the owner's settings, plugins, or MCP servers), accepts file edits
+inside the workspace except to the skill copy, and denies anything else that
+would ask for approval unless it's allowlisted: web search and fetch, and the
+skill's two scripts on the plan file. Restricted mode would be tighter, but it hides
 project skills. Its run log must show it loaded the skill and ran the checker
 successfully. Cursor's shell commands run in its sandbox, without its "allow
 all commands" flag unless --allow-cursor-force is given; Cursor is judged on
@@ -61,15 +62,15 @@ CLAUDE_TOOLS = ["Skill", "Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "
 
 
 def claude_allowed_tools(workspace: str) -> list[str]:
-    """The skill, web search and fetch, writing the plan file, and exactly two
-    shell commands: the checker on the plan and the converter from the plan
-    to its .ics. Reading inside the workspace needs no rule; reading outside
-    it would need approval, which dontAsk denies. The converter writes
+    """The skill, web search and fetch, and exactly two shell commands: the
+    checker on the plan and the converter from the plan to its .ics. Reading
+    and (in acceptEdits mode) editing inside the workspace need no rule;
+    anything outside it would need approval, which is denied. The converter writes
     wherever its second argument says, so neither script gets an open-ended
     rule. The scripts can't be rewritten first: claude_disallowed_tools
     blocks edits to the copied skill, and prepare_workspace makes it
     read-only."""
-    tools = ["Skill", "WebSearch", "WebFetch", f"Write({PLAN_NAME})", f"Edit({PLAN_NAME})"]
+    tools = ["Skill", "WebSearch", "WebFetch"]
     roots = workspace_roots(workspace)
     bases = [".claude/skills/travel-planner/scripts"]
     bases += [os.path.join(root, ".claude/skills/travel-planner/scripts") for root in roots]
@@ -83,14 +84,16 @@ def claude_allowed_tools(workspace: str) -> list[str]:
 
 
 def claude_disallowed_tools(workspace: str) -> list[str]:
-    """Rule paths in CLI flags resolve from the working directory, so the
-    relative form is the one that matches."""
-    return [f"{tool}({rel}/**)" for rel in SKILL_INSTALL_DIRS for tool in ("Write", "Edit")]
+    """Edit(path) rules cover every file-writing tool (Write(path) rules are
+    never consulted), and paths in CLI flags resolve from the working
+    directory."""
+    return [f"Edit({rel}/**)" for rel in SKILL_INSTALL_DIRS]
 
 
 def build_claude_command(binary: str, workspace: str, prompt: str) -> list[str]:
     return [binary, "-p", prompt, "--output-format", "stream-json", "--verbose",
-            "--setting-sources", "project", "--strict-mcp-config", "--permission-mode", "dontAsk",
+            "--setting-sources", "project", "--strict-mcp-config",
+            "--permission-mode", "acceptEdits", "--permission-prompts", "none",
             "--tools", ",".join(CLAUDE_TOOLS),
             "--allowedTools", *claude_allowed_tools(workspace),
             "--disallowedTools", *claude_disallowed_tools(workspace)]
@@ -221,7 +224,9 @@ def judge_run(agent: str, command: list[str], workspace: str, timeout: int, runn
         f.write(completed.stdout or "")
         f.write(completed.stderr or "")
     if completed.returncode != 0:
-        return Result(agent, "fail", f"exited {completed.returncode}", workspace)
+        output = (completed.stderr or "").strip() or (completed.stdout or "").strip()
+        last_line = output.splitlines()[-1] if output else ""
+        return Result(agent, "fail", f"exited {completed.returncode}: {last_line}".rstrip(": "), workspace)
     failures = evaluate_plan(os.path.join(workspace, PLAN_NAME))
     if agent in TRANSCRIPT_CHECKS:
         failures += TRANSCRIPT_CHECKS[agent](completed.stdout or "")
