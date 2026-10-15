@@ -67,8 +67,10 @@ read the rest in.
    Fix every ERROR line and run it again. An error you can't fix (a booked
    flight inside the bedtime window, say) goes under "Needs Attention" by its
    row title, which the checker then reports as acknowledged. WARNING lines
-   don't block saving. If you can't run commands, apply the same rules by
-   reading `references/output-format-spec.md`'s "Checking a plan".
+   don't block saving. Run this exact command even if another command was
+   refused: some agents allow only specific commands. Only if this one
+   can't run, apply the same rules by reading
+   `references/output-format-spec.md`'s "Checking a plan".
 
 4. **Flights, if requested.** Follow
    `integrations/flight-search-integration.md` — check for

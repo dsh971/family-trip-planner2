@@ -48,6 +48,36 @@ say "pick for me" to get a full plan without being asked questions. See
 `docs/install.md` for installing by hand, what the skill needs from the
 agent, and the current state of chat-app support.
 
+## What's been tested
+
+**Expected to work, and checked:**
+
+- **Installing.** CI runs the real installer (`skills@1.5.22`) on every push
+  and checks the installed copy for Claude Code (`~/.claude/skills`) and for
+  Codex and Cursor (both read `~/.agents/skills`).
+- **Claude Code.** In a real run, Claude Code planned the test trip (three
+  days in San Diego, "pick for me") into a plan that passed the checker and
+  converted to a calendar. A later run loaded the skill through Claude
+  Code's own skill tool. A single run that does both under the final test
+  settings hasn't been recorded yet.
+- **The scripts.** `check_plan.py` and `md_to_ics.py` have unit tests, run
+  in CI on Python 3.12 (Linux) and locally on macOS.
+
+**To do:**
+
+- **Run Cursor and Codex on the skill.** It already installs where they
+  look for it. The scripted-run harness needs a Codex command, and the
+  Cursor run needs a logged-in Cursor account.
+- **Try another agent that reads `SKILL.md`** without a question tool or a
+  shell. The instructions are written for that case.
+- **Package the skill for chat apps** (claude.ai, ChatGPT, Perplexity).
+- **Test on Windows and on Python 3.10–3.11.** The docs say 3.10 or later.
+- **Fix two plan-checker gaps.** A nap row titled "Naptime" is flagged
+  as overlapping the `nap` window. A row that falls on the previous evening
+  after a time-zone conversion isn't checked yet.
+- **Add automated tests for the optional CLIs** below. So far they've been
+  tried by hand at the pinned version.
+
 ## Optional tool integrations
 
 The skill can shell out to external CLIs from the third-party
@@ -124,7 +154,12 @@ python3 -m unittest discover -s tests -v   # from the repo root
 python3 tests/install_smoke.py             # installs with the real installer; needs npx
 ```
 
-GitHub Actions runs both on every push (`.github/workflows/checks.yml`). The
+`python3 tests/run_agent_smoke.py` runs real agents (Claude Code, and
+Cursor when you're logged in) on a fixed San Diego "pick for me" trip, then
+checks each plan and Claude Code's run log. It spends your subscriptions,
+so it never runs in CI.
+
+GitHub Actions runs the first two on every push (`.github/workflows/checks.yml`). The
 tests also convert `examples/trip-plans/sample-trip-lilliput.md`, so a
 spec change that breaks the example fails the suite.
 
