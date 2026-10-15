@@ -83,8 +83,9 @@ class FakeRunner:
         self.plan_text, self.returncode, self.timeout, self.stdout = plan_text, returncode, timeout, stdout
         self.commands = []
 
-    def __call__(self, command, cwd, capture_output, text, timeout):
+    def __call__(self, command, cwd, capture_output, text, timeout, stdin=None):
         self.commands.append(command)
+        self.stdin = stdin
         if self.timeout:
             raise subprocess.TimeoutExpired(command, timeout)
         if self.plan_text is not None:
@@ -169,6 +170,25 @@ class RunAgentTest(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertIn("check_plan.py", result.detail)
 
+    def test_permission_denied_event_with_a_text_message_is_read(self):
+        denied = {"type": "system", "subtype": "permission_denied", "message": "Permission to use Bash has been denied"}
+        stdout = GOOD_TRANSCRIPT + transcript(denied)
+        result = self.run_one("claude-code", FakeRunner(GOOD_PLAN, stdout=stdout))
+        self.assertEqual(result.status, "pass", result.detail)
+
+    def test_agent_gets_no_stdin(self):
+        runner = FakeRunner(GOOD_PLAN)
+        self.run_one("claude-code", runner)
+        self.assertIs(runner.stdin, subprocess.DEVNULL)
+
+    def test_a_crash_while_judging_one_agent_fails_it_without_stopping_the_run(self):
+        class Exploding(FakeRunner):
+            def __call__(self, *args, **kwargs):
+                raise RuntimeError("boom")
+        result = self.run_one("claude-code", Exploding())
+        self.assertEqual(result.status, "fail")
+        self.assertIn("boom", result.detail)
+
     def test_cursor_run_is_judged_on_the_plan_alone(self):
         result = self.run_one("cursor", FakeRunner(GOOD_PLAN, stdout="plain text"))
         self.assertEqual(result.status, "pass", result.detail)
@@ -194,17 +214,21 @@ class CommandTest(unittest.TestCase):
         self.assertNotIn("Bash", allowed)
         self.assertNotIn("Bash(*)", allowed)
 
-    def test_claude_command_runs_restricted_without_the_owners_settings(self):
+    def test_claude_command_loads_project_skills_but_not_the_owners_settings(self):
         command = run_agent_smoke.build_claude_command("claude", "/tmp/ws", "prompt")
-        for flag in ("--restricted", "--strict-mcp-config"):
-            self.assertIn(flag, command)
+        self.assertNotIn("--restricted", command)
+        self.assertIn("--strict-mcp-config", command)
+        self.assertEqual(command[command.index("--setting-sources") + 1], "project")
+        allowed = command[command.index("--allowedTools") + 1:command.index("--disallowedTools")]
+        for open_ended in ("Read", "Write", "Edit", "Glob", "Grep"):
+            self.assertNotIn(open_ended, allowed)
+        self.assertIn("Write(trip-plan.md)", allowed)
         self.assertEqual(command[command.index("--permission-mode") + 1], "dontAsk")
         tools = command[command.index("--tools") + 1].split(",")
         for tool in ("Skill", "Bash", "WebFetch"):
             self.assertIn(tool, tools)
         self.assertEqual(command[command.index("--output-format") + 1], "stream-json")
         self.assertIn("--verbose", command)
-        self.assertNotIn("--setting-sources", command)
 
     def test_claude_checker_rule_accepts_a_dot_slash_plan_path(self):
         command = run_agent_smoke.build_claude_command("claude", "/tmp/ws", "prompt")

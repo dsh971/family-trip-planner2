@@ -8,10 +8,11 @@ Run from the repo root, by hand:
 This spends the owner's Claude and Cursor subscriptions and reads live web
 pages, so it is never part of CI or unit-test discovery. Each agent runs in
 its own throwaway workspace with the skill copied in; the owner's logins
-are NOT isolated. Claude Code runs in restricted mode (file tools confined to
-the workspace, the owner's settings files and MCP servers ignored) with an
-allowlist whose only shell commands are the skill's two scripts on the plan
-file, and its run log must show it loaded the skill and ran the checker
+are NOT isolated. Claude Code loads only the workspace's own settings and
+skills (not the owner's settings, plugins, or MCP servers) and denies anything
+not allowlisted: web search and fetch, writing the plan file, and the skill's
+two scripts on that file. Restricted mode would be tighter, but it hides
+project skills. Its run log must show it loaded the skill and ran the checker
 successfully. Cursor's shell commands run in its sandbox, without its "allow
 all commands" flag unless --allow-cursor-force is given; Cursor is judged on
 its plan alone. Workspaces are deleted after a pass and kept after a failure.
@@ -60,13 +61,15 @@ CLAUDE_TOOLS = ["Skill", "Read", "Write", "Edit", "Glob", "Grep", "WebSearch", "
 
 
 def claude_allowed_tools(workspace: str) -> list[str]:
-    """Read/write files, web search and fetch, and exactly two shell commands:
-    the checker on the plan and the converter from the plan to its .ics.
-    The converter writes wherever its second argument says, so neither
-    script gets an open-ended rule. The scripts can't be rewritten first:
-    claude_disallowed_tools blocks edits to the copied skill, and
-    prepare_workspace makes it read-only."""
-    tools = [tool for tool in CLAUDE_TOOLS if tool != "Bash"]
+    """The skill, web search and fetch, writing the plan file, and exactly two
+    shell commands: the checker on the plan and the converter from the plan
+    to its .ics. Reading inside the workspace needs no rule; reading outside
+    it would need approval, which dontAsk denies. The converter writes
+    wherever its second argument says, so neither script gets an open-ended
+    rule. The scripts can't be rewritten first: claude_disallowed_tools
+    blocks edits to the copied skill, and prepare_workspace makes it
+    read-only."""
+    tools = ["Skill", "WebSearch", "WebFetch", f"Write({PLAN_NAME})", f"Edit({PLAN_NAME})"]
     roots = workspace_roots(workspace)
     bases = [".claude/skills/travel-planner/scripts"]
     bases += [os.path.join(root, ".claude/skills/travel-planner/scripts") for root in roots]
@@ -80,18 +83,15 @@ def claude_allowed_tools(workspace: str) -> list[str]:
 
 
 def claude_disallowed_tools(workspace: str) -> list[str]:
-    denied = []
-    for rel in SKILL_INSTALL_DIRS:
-        targets = [rel] + [os.path.join(root, rel) for root in workspace_roots(workspace)]
-        for target in targets:
-            for tool in ("Write", "Edit"):
-                denied.append(f"{tool}({target}/**)")
-    return denied
+    """Rule paths in CLI flags resolve from the working directory, so the
+    relative form is the one that matches."""
+    return [f"{tool}({rel}/**)" for rel in SKILL_INSTALL_DIRS for tool in ("Write", "Edit")]
 
 
 def build_claude_command(binary: str, workspace: str, prompt: str) -> list[str]:
     return [binary, "-p", prompt, "--output-format", "stream-json", "--verbose",
-            "--restricted", "--strict-mcp-config", "--permission-mode", "dontAsk", "--tools", ",".join(CLAUDE_TOOLS),
+            "--setting-sources", "project", "--strict-mcp-config", "--permission-mode", "dontAsk",
+            "--tools", ",".join(CLAUDE_TOOLS),
             "--allowedTools", *claude_allowed_tools(workspace),
             "--disallowedTools", *claude_disallowed_tools(workspace)]
 
@@ -172,7 +172,8 @@ def claude_transcript_failures(stdout: str) -> list[str]:
             event = json.loads(line)
         except ValueError:
             continue
-        content = (event.get("message") or {}).get("content") if isinstance(event, dict) else None
+        message = event.get("message") if isinstance(event, dict) else None
+        content = message.get("content") if isinstance(message, dict) else None
         for block in content if isinstance(content, list) else []:
             if not isinstance(block, dict):
                 continue
@@ -204,9 +205,16 @@ def run_agent(agent: str, binary: str | None, prompt: str, timeout: int, allow_c
     if agent not in builders:
         return Result(agent, "skipped", f"{AGENTS[agent]} is installed but this runner has no command for it yet")
     workspace = prepare_workspace(agent)
-    command = builders[agent](workspace)
     try:
-        completed = runner(command, cwd=workspace, capture_output=True, text=True, timeout=timeout)
+        return judge_run(agent, builders[agent](workspace), workspace, timeout, runner)
+    except Exception as exc:  # one agent's crash must not cost the other agents' runs
+        return Result(agent, "fail", f"runner error: {exc!r}", workspace)
+
+
+def judge_run(agent: str, command: list[str], workspace: str, timeout: int, runner) -> Result:
+    try:
+        completed = runner(command, cwd=workspace, capture_output=True, text=True, timeout=timeout,
+                           stdin=subprocess.DEVNULL)
     except subprocess.TimeoutExpired:
         return Result(agent, "fail", f"timed out after {timeout}s", workspace)
     with open(os.path.join(workspace, "agent-output.txt"), "w", encoding="utf-8") as f:
