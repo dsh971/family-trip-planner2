@@ -56,10 +56,10 @@ agent, and the current state of chat-app support.
   and checks the installed copy for Claude Code (`~/.claude/skills`) and for
   Codex and Cursor (both read `~/.agents/skills`).
 - **Claude Code.** In a real run, Claude Code planned the test trip (three
-  days in San Diego, "pick for me") into a plan that passed the checker and
-  converted to a calendar. A later run loaded the skill through Claude
-  Code's own skill tool. A single run that does both under the final test
-  settings hasn't been recorded yet.
+  days in San Diego, "pick for me"). On 2026-10-20 it passed the full
+  scripted run: it loaded the skill through its own skill tool, ran the
+  checker itself, and wrote a plan that passed the checker and the run's
+  trip-specific checks.
 - **The scripts.** `check_plan.py` and `md_to_ics.py` have unit tests, run
   in CI on Python 3.12 (Linux) and locally on macOS.
 
@@ -155,9 +155,9 @@ python3 tests/install_smoke.py             # installs with the real installer; n
 ```
 
 `python3 tests/run_agent_smoke.py` runs real agents (Claude Code, and
-Cursor when you're logged in) on a fixed San Diego "pick for me" trip, then
-checks each plan and Claude Code's run log. It spends your subscriptions,
-so it never runs in CI.
+Cursor when you're logged in; a logged-out Cursor is skipped) on a fixed
+San Diego "pick for me" trip, then checks each plan and Claude Code's run
+log. It spends your subscriptions, so it never runs in CI.
 
 GitHub Actions runs the first two on every push (`.github/workflows/checks.yml`). The
 tests also convert `examples/trip-plans/sample-trip-lilliput.md`, so a
