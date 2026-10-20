@@ -18,8 +18,8 @@ successfully. Cursor's shell commands run in its sandbox, without its "allow
 all commands" flag unless --allow-cursor-force is given; Cursor is judged on
 its plan alone. Workspaces are deleted after a pass and kept after a failure.
 
-Exit codes: 0 when no agent failed (skipped agents don't fail the run), 1
-otherwise.
+Exit codes: 0 when no agent failed (skipped agents, including a Cursor that
+isn't logged in, don't fail the run), 1 otherwise.
 """
 import argparse
 import json
@@ -195,6 +195,7 @@ def claude_transcript_failures(stdout: str) -> list[str]:
 
 
 TRANSCRIPT_CHECKS = {"claude-code": claude_transcript_failures}
+LOGGED_OUT_MARKERS = {"cursor": "Authentication required"}
 
 
 def run_agent(agent: str, binary: str | None, prompt: str, timeout: int, allow_cursor_force: bool,
@@ -225,6 +226,9 @@ def judge_run(agent: str, command: list[str], workspace: str, timeout: int, runn
         f.write(completed.stderr or "")
     if completed.returncode != 0:
         output = (completed.stderr or "").strip() or (completed.stdout or "").strip()
+        if agent in LOGGED_OUT_MARKERS and LOGGED_OUT_MARKERS[agent] in output:
+            remove_workspace(workspace)
+            return Result(agent, "skipped", f"{AGENTS[agent]} is not logged in")
         last_line = output.splitlines()[-1] if output else ""
         return Result(agent, "fail", f"exited {completed.returncode}: {last_line}".rstrip(": "), workspace)
     failures = evaluate_plan(os.path.join(workspace, PLAN_NAME))

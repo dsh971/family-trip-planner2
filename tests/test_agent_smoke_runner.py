@@ -190,12 +190,25 @@ class RunAgentTest(unittest.TestCase):
         self.assertIn("boom", result.detail)
 
     def test_failed_exit_reports_the_agents_last_words(self):
+        class Crashed(FakeRunner):
+            def __call__(self, command, cwd, **kwargs):
+                return subprocess.CompletedProcess(command, 1, "", "Error: model overloaded.\n")
+        result = self.run_one("cursor", Crashed())
+        self.assertEqual(result.status, "fail")
+        self.assertIn("exited 1: Error: model overloaded.", result.detail)
+
+    def test_logged_out_cursor_is_skipped_and_its_workspace_removed(self):
         class LoggedOut(FakeRunner):
             def __call__(self, command, cwd, **kwargs):
-                return subprocess.CompletedProcess(command, 1, "", "Error: Authentication required.\n")
-        result = self.run_one("cursor", LoggedOut())
-        self.assertEqual(result.status, "fail")
-        self.assertIn("exited 1: Error: Authentication required.", result.detail)
+                self.cwd = cwd
+                return subprocess.CompletedProcess(
+                    command, 1, "", "Error: Authentication required. Please run 'agent login' first.\n")
+        runner = LoggedOut()
+        result = self.run_one("cursor", runner)
+        self.assertEqual(result.status, "skipped")
+        self.assertIn("not logged in", result.detail)
+        self.assertEqual(result.workspace, "")
+        self.assertFalse(os.path.exists(runner.cwd))
 
     def test_cursor_run_is_judged_on_the_plan_alone(self):
         result = self.run_one("cursor", FakeRunner(GOOD_PLAN, stdout="plain text"))
