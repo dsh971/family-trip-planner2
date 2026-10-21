@@ -7,13 +7,16 @@ on guessed constraints — a wrong assumption about nap times or mobility
 needs invalidates an entire itinerary, while asking a few short questions
 up front costs nothing. Ask every question that applies in one turn — the
 ones that depend on another answer are worded so they can go in the same
-turn — and let the traveler answer in whatever shape is natural. Follow up
-only on what's missing or ambiguous.
+turn — and let the traveler answer in whatever shape is natural. After
+that turn, follow up only if cities or dates are missing or an answer can't
+be understood; anything else left unanswered gets a default (see "What NOT
+to do with the answers").
 
 Where a question has a small set of likely answers (whether naps can happen
 on the go, help with where to eat, nonstop-only or not, budget level), offer those answers as
-choices the traveler can pick from. Keep open answers — cities, dates,
-addresses, place names — as free text.
+choices the traveler can pick from, written as a short list right after the
+question so the whole intake stays one message. Keep open answers — cities,
+dates, addresses, place names — as free text.
 
 If the traveler already gave some answers — in their first message, or in
 a written brief — don't ask those again; ask only for what's missing. If they
@@ -53,8 +56,9 @@ short and specific.
 4. **Naps on the go.** Ask it alongside question 3, worded so it only
    applies to a nap: "If there's a nap or rest window, can it happen on the
    go (stroller, car, carrier), or does it need a bed back at the lodging?"
-   This decides whether a far-away place can take a full day or only half
-   of one. If the traveler already said there's no nap window, leave this
+   Offer three choices: on the go, needs a bed, no nap window. This
+   decides whether a far-away place can take a full day or only half of
+   one. If the traveler already said there's no nap window, leave this
    question out. With no nap window, or no answer, record "needs a bed"
    (`naps_on_the_go: false`), the conservative default.
 5. **Lodging, per city.** Already booked (get the address — it anchors

@@ -23,8 +23,11 @@ Questions for the Traveler" so they can change it later:
   "Open Questions for the Traveler". A place you can't find at all isn't
   scheduled; list it under both "Needs Attention" and "Open Questions for
   the Traveler".
+- **A place whose kind is unclear (step 1)** — a place outside the city is
+  a day-trip town, an area is a neighborhood, and anything else is an
+  attraction; say which you chose under "Open Questions for the Traveler".
 - **No suggestions found for an anchor (step 2)** — say so in the plan, and
-  suggest the city's top places instead.
+  choose from the city's top places instead, as in step 3's default.
 - **Which suggestions to schedule (step 3)** — the highest-ranked ones that
   fit the city's time (step 5). Record them under **Chosen for you**, not
   **Picked from suggestions**.
@@ -40,7 +43,7 @@ Questions for the Traveler" so they can change it later:
 - **A restaurant that takes reservations** — never book it; list it under
   "Open Questions for the Traveler".
 - **Resuming a city that already has a places record** — keep the record
-  as it is.
+  as it is, without confirming it (nothing to record for this one).
 
 ## 1. Ask for must-visit places
 
@@ -57,8 +60,8 @@ A large park, campus, or market district with several separate places
 inside it ("Balboa Park") is a neighborhood: suggest places inside it.
 
 If you can't tell which kind a place is, or can't find it at all, ask the
-traveler — never guess at which place they meant. (In pick-for-me mode,
-use that mode's default instead: the most likely match, said openly.)
+traveler — never guess at which place they meant. Pick-for-me mode has
+its own default for this (above).
 
 If the traveler names nothing, that's fine: go to step 2 and suggest the
 city's top places instead.
@@ -197,9 +200,7 @@ Check the plan before saving it. If you can run commands, run
 `output-format-spec.md`'s "Checking a plan" by reading. Fix every error and
 check again. An error you can't fix — a booked flight inside the bedtime
 window, say — goes under "Needs Attention" by its row title, which marks it
-acknowledged. Warnings don't block saving. When you hand the plan over,
-tell the traveler about each acknowledged error and why it couldn't be
-fixed — the checker stops reporting it, so they'd otherwise never hear.
+acknowledged. Warnings don't block saving.
 
 Then set the city's `status` to `planned`, and start the next `outlined`
 city at step 1.
@@ -209,14 +210,19 @@ city at step 1.
 Open the plan file and continue at the first city whose `status` is
 `outlined`. Check these in order and use the first that matches:
 
-1. **Its days are already scheduled** — any of the city's days holds a row
-   beyond its fixed rows (see `output-format-spec.md`). Scheduling is done;
-   don't redo it. If the traveler wanted help with every meal, continue at
-   step 7 for the meals the **Meals** record doesn't cover yet. Then go to
-   step 8.
+1. **It has a places record and scheduled days** — any of the city's days
+   holds a row beyond its fixed rows (see `output-format-spec.md`). Keep
+   what's scheduled. Schedule each named, picked, or chosen place that isn't
+   in a row or under "Needs Attention" yet (step 6), as the session may have
+   stopped partway through. If the traveler wanted help with every meal,
+   continue at step 7 for the meals the **Meals** record doesn't cover yet.
+   Then go to step 8.
 2. **It has a places record** — picking is done. Show the traveler the
-   record, confirm it still stands, and go to step 4.
-3. **Neither** — start at step 1.
+   record and confirm it still stands (in pick-for-me mode, keep it without
+   asking), then go to step 4.
+3. **Neither** — start at step 1. Keep any rows already on the city's days;
+   with no places record, they're the traveler's own, so treat them like
+   fixed bookings.
 
 Revising a city that's already `planned` follows `itinerary-and-pacing.md`'s
 "Revising one city" section.
