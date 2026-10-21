@@ -33,18 +33,20 @@ read the rest in.
    "always ask" questions together, in one turn, and wait for the answers
    before researching — but if the traveler already gave some answers, ask
    only for what's missing, and if they said "pick for me" or "don't ask",
-   ask nothing and use the defaults that doc describes. Ask the flight
-   questions only if the traveler wants flight search. Offer fixed choices
-   for questions with a few likely answers (naps on the go, help with where
-   to eat, nonstop-only, budget level) — see "Asking questions" below; keep
-   cities, dates, and addresses as free text.
+   ask nothing and use the defaults that doc describes. The nap question
+   is worded so it can go in the same turn ("If there's a nap window...").
+   Ask the flight questions only if the traveler wants flight search.
+   Offer fixed choices for questions with a few likely answers (naps on the
+   go, help with where to eat, nonstop-only, budget level) — see "Asking
+   questions" below; keep cities, dates, and addresses as free text.
 
 2. **Write the outline.** Right after intake, write the plan file per
    `references/output-format-spec.md` and "Right after intake" in
    `references/intake-questions.md` — every city `status: outlined`, every day
    heading present with only its fixed rows. Save as
-   `<a reasonable filename>.md`; ask the traveler where, or default to the
-   current working directory.
+   `<a reasonable filename>.md` where the traveler said, or in the current
+   working directory if they didn't, and tell them the path. Don't ask
+   where — that would cost another turn.
 
 3. **Plan each city.** For each `outlined` city in travel order, run
    `references/city-planning-loop.md` end to end. Research follows
