@@ -18,6 +18,13 @@ Questions for the Traveler" so they can change it later:
 
 - **Must-visit places (step 1)** — use the places the traveler already
   named, if any; otherwise the city's top places as in step 2.
+- **A named place that could mean several places (step 1)** — use the
+  most likely one in or near the city, and say which one you used under
+  "Open Questions for the Traveler". A place you can't find at all isn't
+  scheduled; list it under both "Needs Attention" and "Open Questions for
+  the Traveler".
+- **No suggestions found for an anchor (step 2)** — say so in the plan, and
+  suggest the city's top places instead.
 - **Which suggestions to schedule (step 3)** — the highest-ranked ones that
   fit the city's time (step 5). Record them under **Chosen for you**, not
   **Picked from suggestions**.
@@ -32,6 +39,8 @@ Questions for the Traveler" so they can change it later:
   for each meal, marked "chosen for you" in **Meals**.
 - **A restaurant that takes reservations** — never book it; list it under
   "Open Questions for the Traveler".
+- **Resuming a city that already has a places record** — keep the record
+  as it is.
 
 ## 1. Ask for must-visit places
 
@@ -48,7 +57,8 @@ A large park, campus, or market district with several separate places
 inside it ("Balboa Park") is a neighborhood: suggest places inside it.
 
 If you can't tell which kind a place is, or can't find it at all, ask the
-traveler — never guess at which place they meant.
+traveler — never guess at which place they meant. (In pick-for-me mode,
+use that mode's default instead: the most likely match, said openly.)
 
 If the traveler names nothing, that's fine: go to step 2 and suggest the
 city's top places instead.

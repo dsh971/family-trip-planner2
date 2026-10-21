@@ -20,7 +20,9 @@ a written brief — don't ask those again; ask only for what's missing. If they
 said "pick for me", "don't ask", or otherwise asked for a plan without
 questions, ask nothing: use the defaults below and record each one, and
 plan every city with the planning loop's pick-for-me defaults
-(`city-planning-loop.md`).
+(`city-planning-loop.md`). The one exception is cities and dates: they
+have no default, so if either is missing, ask for just those and nothing
+else.
 
 Must-visit places are **not** asked here. They're asked city by city once
 the outline is set (see `city-planning-loop.md`), so each city's list stays

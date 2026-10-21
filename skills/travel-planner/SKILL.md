@@ -33,7 +33,8 @@ read the rest in.
    "always ask" questions together, in one turn, and wait for the answers
    before researching — but if the traveler already gave some answers, ask
    only for what's missing, and if they said "pick for me" or "don't ask",
-   ask nothing and use the defaults that doc describes. The nap question
+   ask nothing and use the defaults that doc describes — unless the
+   cities or dates are missing, which have no default. The nap question
    is worded so it can go in the same turn ("If there's a nap window...").
    Ask the flight questions only if the traveler wants flight search.
    Offer fixed choices for questions with a few likely answers (naps on the
