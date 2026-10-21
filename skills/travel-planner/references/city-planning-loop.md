@@ -197,7 +197,9 @@ Check the plan before saving it. If you can run commands, run
 `output-format-spec.md`'s "Checking a plan" by reading. Fix every error and
 check again. An error you can't fix — a booked flight inside the bedtime
 window, say — goes under "Needs Attention" by its row title, which marks it
-acknowledged. Warnings don't block saving.
+acknowledged. Warnings don't block saving. When you hand the plan over,
+tell the traveler about each acknowledged error and why it couldn't be
+fixed — the checker stops reporting it, so they'd otherwise never hear.
 
 Then set the city's `status` to `planned`, and start the next `outlined`
 city at step 1.
