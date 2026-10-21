@@ -205,11 +205,16 @@ city at step 1.
 ## Resuming an interrupted session
 
 Open the plan file and continue at the first city whose `status` is
-`outlined`. If that city already has a places record, its picking is done:
-show the traveler the record, confirm it still stands, and go to step 4.
-If the city's days are already written and the traveler wanted help with
-every meal, continue at step 7 for the meals the **Meals** record doesn't
-cover yet. Otherwise start at step 1.
+`outlined`. Check these in order and use the first that matches:
+
+1. **Its days are already scheduled** — any of the city's days holds a row
+   beyond its fixed rows (see `output-format-spec.md`). Scheduling is done;
+   don't redo it. If the traveler wanted help with every meal, continue at
+   step 7 for the meals the **Meals** record doesn't cover yet. Then go to
+   step 8.
+2. **It has a places record** — picking is done. Show the traveler the
+   record, confirm it still stands, and go to step 4.
+3. **Neither** — start at step 1.
 
 Revising a city that's already `planned` follows `itinerary-and-pacing.md`'s
 "Revising one city" section.
