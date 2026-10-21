@@ -18,6 +18,16 @@ Questions for the Traveler" so they can change it later:
 
 - **Must-visit places (step 1)** — use the places the traveler already
   named, if any; otherwise the city's top places as in step 2.
+- **A named place that could mean several places (step 1)** — use the
+  most likely one in or near the city, and say which one you used under
+  "Open Questions for the Traveler". A place you can't find at all isn't
+  scheduled; list it under both "Needs Attention" and "Open Questions for
+  the Traveler".
+- **A place whose kind is unclear (step 1)** — a place outside the city is
+  a day-trip town, an area is a neighborhood, and anything else is an
+  attraction; say which you chose under "Open Questions for the Traveler".
+- **No suggestions found for an anchor (step 2)** — say so in the plan, and
+  choose from the city's top places instead, as in step 3's default.
 - **Which suggestions to schedule (step 3)** — the highest-ranked ones that
   fit the city's time (step 5). Record them under **Chosen for you**, not
   **Picked from suggestions**.
@@ -32,6 +42,8 @@ Questions for the Traveler" so they can change it later:
   for each meal, marked "chosen for you" in **Meals**.
 - **A restaurant that takes reservations** — never book it; list it under
   "Open Questions for the Traveler".
+- **Resuming a city that already has a places record** — keep the record
+  as it is, without confirming it (nothing to record for this one).
 
 ## 1. Ask for must-visit places
 
@@ -48,7 +60,8 @@ A large park, campus, or market district with several separate places
 inside it ("Balboa Park") is a neighborhood: suggest places inside it.
 
 If you can't tell which kind a place is, or can't find it at all, ask the
-traveler — never guess at which place they meant.
+traveler — never guess at which place they meant. Pick-for-me mode has
+its own default for this (above).
 
 If the traveler names nothing, that's fine: go to step 2 and suggest the
 city's top places instead.
@@ -195,11 +208,21 @@ city at step 1.
 ## Resuming an interrupted session
 
 Open the plan file and continue at the first city whose `status` is
-`outlined`. If that city already has a places record, its picking is done:
-show the traveler the record, confirm it still stands, and go to step 4.
-If the city's days are already written and the traveler wanted help with
-every meal, continue at step 7 for the meals the **Meals** record doesn't
-cover yet. Otherwise start at step 1.
+`outlined`. Check these in order and use the first that matches:
+
+1. **It has a places record and scheduled days** — any of the city's days
+   holds a row beyond its fixed rows (see `output-format-spec.md`). Keep
+   what's scheduled. Schedule each named, picked, or chosen place that isn't
+   in a row or under "Needs Attention" yet (step 6), as the session may have
+   stopped partway through. If the traveler wanted help with every meal,
+   continue at step 7 for the meals the **Meals** record doesn't cover yet.
+   Then go to step 8.
+2. **It has a places record** — picking is done. Show the traveler the
+   record and confirm it still stands (in pick-for-me mode, keep it without
+   asking), then go to step 4.
+3. **Neither** — start at step 1. Keep any rows already on the city's days;
+   with no places record, they're the traveler's own, so treat them like
+   fixed bookings.
 
 Revising a city that's already `planned` follows `itinerary-and-pacing.md`'s
 "Revising one city" section.

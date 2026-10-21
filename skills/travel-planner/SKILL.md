@@ -33,18 +33,21 @@ read the rest in.
    "always ask" questions together, in one turn, and wait for the answers
    before researching — but if the traveler already gave some answers, ask
    only for what's missing, and if they said "pick for me" or "don't ask",
-   ask nothing and use the defaults that doc describes. Ask the flight
-   questions only if the traveler wants flight search. Offer fixed choices
-   for questions with a few likely answers (naps on the go, help with where
-   to eat, nonstop-only, budget level) — see "Asking questions" below; keep
-   cities, dates, and addresses as free text.
+   ask nothing and use the defaults that doc describes — unless the
+   cities or dates are missing, which have no default. Ask the flight
+   questions only if the traveler wants flight search.
+   Offer fixed choices for questions with a few likely answers (naps on the
+   go, help with where to eat, nonstop-only, budget level) as short lists
+   inside that one message; keep cities, dates, and addresses as free text.
 
 2. **Write the outline.** Right after intake, write the plan file per
    `references/output-format-spec.md` and "Right after intake" in
    `references/intake-questions.md` — every city `status: outlined`, every day
    heading present with only its fixed rows. Save as
-   `<a reasonable filename>.md`; ask the traveler where, or default to the
-   current working directory.
+   `<a reasonable filename>.md` where the traveler said, or in the current
+   working directory if they didn't, and tell them the path. Don't ask
+   where — that would cost another turn. Never overwrite an existing file:
+   if the name is taken, pick another.
 
 3. **Plan each city.** For each `outlined` city in travel order, run
    `references/city-planning-loop.md` end to end. Research follows
@@ -66,11 +69,13 @@ read the rest in.
    ```
    Fix every ERROR line and run it again. An error you can't fix (a booked
    flight inside the bedtime window, say) goes under "Needs Attention" by its
-   row title, which the checker then reports as acknowledged. WARNING lines
-   don't block saving. Run this exact command even if another command was
-   refused: some agents allow only specific commands. Only if this one
-   can't run, apply the same rules by reading
-   `references/output-format-spec.md`'s "Checking a plan".
+   row title, which the checker then reports as acknowledged. When you hand
+   over the plan, tell the traveler about every ACKNOWLEDGED line from that
+   final check and why it couldn't be fixed. WARNING lines don't block
+   saving. Run this exact command even if another command was refused:
+   some agents allow only specific commands. Only if this one can't run,
+   apply the same rules by reading `references/output-format-spec.md`'s
+   "Checking a plan".
 
 4. **Flights, if requested.** Follow
    `integrations/flight-search-integration.md` — check for
@@ -97,8 +102,10 @@ read the rest in.
 ## Asking questions
 
 If your platform gives you a structured question tool — one that shows the
-traveler choices to tick and waits for the answer — use it for fixed-choice
-questions and pick lists. (In Claude Code that's `AskUserQuestion`; other
+traveler choices to tick and waits for the answer — use it for the
+planning loop's pick lists. Don't use it for intake: intake mixes choices
+with free-text answers, and splitting it between the tool and a message
+would take two turns. (In Claude Code that's `AskUserQuestion`; other
 agents name theirs differently.) If it doesn't, write the choices as a
 numbered list and ask the traveler to reply with numbers or their own
 answer. Either way, wait for the answer before going on.

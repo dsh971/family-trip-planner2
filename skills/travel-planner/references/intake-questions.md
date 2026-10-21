@@ -5,22 +5,27 @@ Ask these before researching anything. They establish the **trip outline**
 that every later step plans inside. The point is to avoid building a plan
 on guessed constraints — a wrong assumption about nap times or mobility
 needs invalidates an entire itinerary, while asking a few short questions
-up front costs nothing. Don't ask them one at a time in many round-trips if
-the traveler is willing to answer in one go — present them together and let
-the traveler answer in whatever shape is natural; only follow up on what's
-missing or ambiguous.
+up front costs nothing. Ask every question that applies in one turn — the
+ones that depend on another answer are worded so they can go in the same
+turn — and let the traveler answer in whatever shape is natural. After
+that turn, follow up only if cities or dates are missing or an answer can't
+be understood; anything else left unanswered gets a default (see "What NOT
+to do with the answers").
 
 Where a question has a small set of likely answers (whether naps can happen
 on the go, help with where to eat, nonstop-only or not, budget level), offer those answers as
-choices the traveler can pick from. Keep open answers — cities, dates,
-addresses, place names — as free text.
+choices the traveler can pick from, written as a short list right after the
+question so the whole intake stays one message. Keep open answers — cities,
+dates, addresses, place names — as free text.
 
 If the traveler already gave some answers — in their first message, or in
 a written brief — don't ask those again; ask only for what's missing. If they
 said "pick for me", "don't ask", or otherwise asked for a plan without
 questions, ask nothing: use the defaults below and record each one, and
 plan every city with the planning loop's pick-for-me defaults
-(`city-planning-loop.md`).
+(`city-planning-loop.md`). The one exception is cities and dates: they
+have no default, so if either is missing, ask for just those and nothing
+else.
 
 Must-visit places are **not** asked here. They're asked city by city once
 the outline is set (see `city-planning-loop.md`), so each city's list stays
@@ -48,12 +53,14 @@ short and specific.
    we nap" — the itinerary methodology treats these as hard blocks and needs
    real times to schedule around (see `itinerary-and-pacing.md`). Times are
    local clock times wherever the family is that day.
-4. **Naps on the go — ask only if they reported a nap or rest window.** Can
-   the nap happen on the go (stroller, car, carrier), or does it need a bed
-   back at the lodging? This decides whether a far-away place can take a
-   full day or only half of one. If there's no nap window, don't ask; record
-   the answer as "needs a bed" (`naps_on_the_go: false`), the conservative
-   default.
+4. **Naps on the go.** Ask it alongside question 3, worded so it only
+   applies to a nap: "If there's a nap or rest window, can it happen on the
+   go (stroller, car, carrier), or does it need a bed back at the lodging?"
+   Offer three choices: on the go, needs a bed, no nap window. This
+   decides whether a far-away place can take a full day or only half of
+   one. If the traveler already said there's no nap window, leave this
+   question out. With no nap window, or no answer, record "needs a bed"
+   (`naps_on_the_go: false`), the conservative default.
 5. **Lodging, per city.** Already booked (get the address — it anchors
    rest and the days without a must-visit place), or not yet (use the likely
    neighborhood's center as a placeholder, record it as "not booked yet",
